@@ -1,0 +1,2717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>逆变器选型 · 区县容配比绑定</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #f6f9fc; min-height: 100vh;
+      display: flex; justify-content: center; align-items: center; padding: 20px;
+    }
+    .container {
+      max-width: 1300px; width: 100%; background: white; border-radius: 32px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .header {
+      background: linear-gradient(145deg, #0b2b40, #123b54);
+      color: white; padding: 24px 32px; display: flex; align-items: center; gap: 16px;
+      border-bottom: 2px solid #1e4e6b;
+    }
+    .header i.fa-bolt { font-size: 2.2rem; color: #64b5f6; filter: drop-shadow(0 0 6px rgba(100, 181, 246, 0.5)); }
+    .header h1 { font-weight: 600; font-size: 1.8rem; letter-spacing: -0.02em; }
+    .header span {
+      font-weight: 400; font-size: 1rem; opacity: 0.8; margin-left: auto;
+      background: rgba(255, 255, 255, 0.1); padding: 8px 16px; border-radius: 40px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .header span.admin-badge {
+      background: linear-gradient(135deg, #1f9e5a, #0f6b3e);
+      box-shadow: 0 0 0 2px rgba(31, 158, 90, 0.3);
+      opacity: 1;
+    }
+    .admin-entry-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.65);
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      margin-left: 10px;
+      padding: 0;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .admin-entry-btn:hover { background: rgba(255, 255, 255, 0.2); color: white; transform: translateY(-1px); }
+    .admin-entry-btn.logout {
+      background: linear-gradient(135deg, #1f9e5a, #0f6b3e);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 0 0 2px rgba(31, 158, 90, 0.35);
+    }
+    .admin-entry-btn.logout:hover { background: linear-gradient(135deg, #178a4c, #0a5c33); box-shadow: 0 0 0 3px rgba(31, 158, 90, 0.45); }
+    .main { display: flex; flex-wrap: wrap; padding: 32px; gap: 32px; background: white; }
+    .config-panel {
+      flex: 1; min-width: 340px; background: #f8fafd; border-radius: 24px; padding: 28px;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.02), 0 6px 18px -6px rgba(0, 20, 40, 0.08);
+      border: 1px solid #e2ecf5;
+    }
+    .config-panel h2 {
+      font-size: 1.4rem; font-weight: 600; color: #0b2b40; display: flex; align-items: center;
+      gap: 10px; margin-bottom: 24px; letter-spacing: -0.01em;
+      border-bottom: 2px solid #cbdbe8; padding-bottom: 16px;
+    }
+    .config-panel h2 i { color: #1e6b9e; font-size: 1.4rem; }
+    .param-group { margin-bottom: 22px; }
+    .param-group label {
+      display: flex; align-items: center; gap: 8px; font-weight: 500;
+      color: #1f4a66; font-size: 0.95rem; margin-bottom: 8px;
+    }
+    .param-group label i { width: 18px; color: #2c7fb8; font-size: 0.95rem; }
+    .param-group .hint {
+      font-size: 0.8rem; color: #5f7d95; margin-top: 6px; margin-left: 26px; line-height: 1.5;
+    }
+    .input-wrapper {
+      display: flex; align-items: center; background: white; border-radius: 14px;
+      border: 1px solid #cddfeb; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .input-wrapper:focus-within { border-color: #2c7fb8; box-shadow: 0 0 0 4px rgba(44, 127, 184, 0.15); }
+    .input-wrapper input {
+      flex: 1; padding: 14px 16px; border: none; background: transparent;
+      font-size: 1rem; font-weight: 500; color: #0b2b40; outline: none; font-family: 'Inter', sans-serif;
+    }
+    .input-wrapper input[type="number"] { -moz-appearance: textfield; }
+    .input-wrapper input::-webkit-outer-spin-button,
+    .input-wrapper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .input-wrapper.warning { border-color: #d96b30; background: #fff8f4; }
+    .input-wrapper .unit {
+      padding: 0 18px 0 8px; font-weight: 600; color: #3f6a88; background: #e9f0f7;
+      height: 100%; display: flex; align-items: center;
+      border-left: 1px solid #cddfeb; border-radius: 0 14px 14px 0; font-size: 0.9rem;
+    }
+    .input-wrapper.warning .unit { background: #fde8dd; color: #b34a1c; }
+    .select-wrapper {
+      display: flex; align-items: center; background: white; border-radius: 14px;
+      border: 1px solid #cddfeb; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      position: relative;
+    }
+    .select-wrapper:focus-within { border-color: #2c7fb8; box-shadow: 0 0 0 4px rgba(44, 127, 184, 0.15); }
+    .select-wrapper select {
+      flex: 1; padding: 14px 16px; border: none; background: transparent;
+      font-size: 1rem; font-weight: 500; color: #0b2b40; outline: none;
+      font-family: 'Inter', sans-serif; cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .select-wrapper select:disabled { color: #a0b8cc; cursor: not-allowed; }
+    .select-wrapper .select-icon {
+      position: absolute; right: 16px; color: #5f7d95; pointer-events: none; font-size: 0.85rem;
+    }
+    .btn-reset {
+      width: 100%; margin-top: 16px; padding: 14px 18px; border: none;
+      background: #e2ecf5; color: #1f4a66; border-radius: 16px;
+      font-weight: 600; font-size: 0.95rem; display: flex; align-items: center;
+      justify-content: center; gap: 10px; cursor: pointer; transition: all 0.2s;
+      font-family: 'Inter', sans-serif; border: 1px solid #cbdbe8;
+    }
+    .btn-reset:hover { background: #d3e2ef; color: #0b2b40; transform: translateY(-1px); }
+    .btn-reset.btn-primary { background: #2c7fb8; color: white; border-color: #2c7fb8; }
+    .btn-reset.btn-primary:hover { background: #1e6b9e; color: white; }
+    .btn-reset.btn-danger { background: #fde8dd; color: #b34a1c; border-color: #f5cfb9; }
+    .btn-reset.btn-danger:hover { background: #f9d5c0; color: #8e3a14; }
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn-reset { margin-top: 0; }
+    .result-panel { flex: 1.5; min-width: 440px; display: flex; flex-direction: column; gap: 24px; }
+    .card {
+      background: #ffffff; border-radius: 24px; padding: 24px 28px;
+      box-shadow: 0 10px 30px -10px rgba(0, 20, 40, 0.12);
+      border: 1px solid #dae8f2; transition: box-shadow 0.2s, border-color 0.3s;
+    }
+    .card:hover { box-shadow: 0 20px 35px -12px rgba(0, 40, 70, 0.18); }
+    .card.investor-mode {
+      border: 2px solid #e8a33d;
+      background: linear-gradient(180deg, #fffdf8 0%, #ffffff 40%);
+    }
+    .card-title {
+      font-size: 1.1rem; font-weight: 600; color: #0b2b40; display: flex;
+      align-items: center; gap: 10px; margin-bottom: 18px; letter-spacing: -0.01em;
+    }
+    .card-title i { color: #1e6b9e; font-size: 1.2rem; background: #e4f0f9; padding: 6px; border-radius: 12px; }
+    .card.investor-mode .card-title i { color: #b8791c; background: #fdf0da; }
+    .result-grid { display: grid; grid-template-columns: 1fr; gap: 14px 0; }
+    .result-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px dashed #d4e4f0;
+    }
+    .result-item .label {
+      font-weight: 500; color: #325e7c; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .result-item .label i { color: #5c8eb0; font-size: 0.85rem; width: 16px; }
+    .result-item .value {
+      font-weight: 700; font-size: 1.05rem; color: #0b2b40; letter-spacing: -0.01em;
+      background: #e9f2fa; padding: 4px 14px; border-radius: 40px;
+      white-space: nowrap; text-align: right;
+    }
+    .result-item .value small { font-weight: 500; font-size: 0.8rem; color: #3f6a88; margin-left: 4px; }
+    .highlight-value { color: #0f6b3e !important; background: #e1f5ea !important; }
+    .warning-value { color: #b34a1c !important; background: #ffe8dd !important; }
+    .summary-note {
+      background: #f0f7fe; border-left: 5px solid #2c7fb8; border-radius: 12px;
+      padding: 18px 20px; margin-top: 20px; font-size: 0.92rem; color: #1b4b6c;
+      line-height: 1.6; display: flex; gap: 14px; align-items: flex-start;
+    }
+    .summary-note.warn { background: #fff4ee; border-left-color: #d96b30; }
+    .summary-note.ok { background: #edf9f1; border-left-color: #1f9e5a; }
+    .summary-note.investor { background: #fffaf0; border-left-color: #e8a33d; }
+    .summary-note i { font-size: 1.4rem; color: #1e6b9e; margin-top: 2px; }
+    .summary-note.warn i { color: #d96b30; }
+    .summary-note.ok i { color: #1f9e5a; }
+    .summary-note.investor i { color: #e8a33d; }
+    .summary-note strong { font-weight: 700; color: #0b2b40; }
+    .location-info { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .location-info-item {
+      background: #f0f7fe; border-radius: 12px; padding: 10px 16px; font-size: 0.85rem;
+      color: #1f4a66; display: flex; align-items: center; gap: 8px; border: 1px solid #d4e4f0;
+    }
+    .location-info-item i { color: #2c7fb8; }
+    .location-info-item strong { color: #0b2b40; }
+    .location-info-item.investor { background: #fffaf0; border-color: #f0d4a8; color: #7a4d0b; }
+    .location-info-item.investor i { color: #e8a33d; }
+    .ratio-check {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem;
+      font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-left: 8px;
+    }
+    .ratio-check.ok { background: #e1f5ea; color: #0f6b3e; }
+    .ratio-check.fail { background: #ffe8dd; color: #b34a1c; }
+
+    .trace-row {
+      margin-top: 10px; background: #f4f9fe; border-radius: 12px;
+      padding: 12px 18px; border: 1px solid #dce9f4;
+      display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    .trace-row .trace-label {
+      font-weight: 500; color: #325e7c; font-size: 0.92rem; flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .trace-row .trace-label i { color: #2c7fb8; margin-right: 6px; }
+    .trace-row .trace-value {
+      font-size: 0.85rem; color: #3f6a88; font-weight: 600;
+      text-align: right; line-height: 1.7; flex: 1; min-width: 0;
+    }
+    .trace-row .trace-value strong { color: #0b2b40; }
+    .trace-row .trace-value .sub { display: block; font-weight: 500; color: #5f7d95; font-size: 0.78rem; margin-top: 2px; }
+    .trace-row.highlight { background: #edf9f1; border-color: #b8e0c8; }
+    .trace-row.highlight .trace-label i { color: #1f9e5a; }
+    .trace-row.investor-highlight { background: #fffaf0; border-color: #f0d4a8; }
+    .trace-row.investor-highlight .trace-label i { color: #e8a33d; }
+    .trace-row.investor-highlight .trace-value strong { color: #b8791c; }
+
+    .rule-badges-wrap {
+      margin-top: 10px; background: #f4f9fe; border-radius: 12px;
+      padding: 12px 18px; border: 1px solid #dce9f4;
+    }
+    .rule-badges-wrap.investor-wrap { background: #fffaf0; border-color: #f0d4a8; }
+    .rule-badges-title {
+      font-weight: 500; color: #325e7c; font-size: 0.92rem;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .rule-badges-title i { color: #2c7fb8; }
+    .rule-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .rule-badge {
+      font-size: 0.75rem; font-weight: 600; padding: 3px 9px;
+      border-radius: 16px; background: #e4f0f9; color: #1f4a66;
+      white-space: nowrap; border: 1px solid #cfe2f0;
+    }
+    .rule-badge.current { background: #c4e8d3; color: #0f6b3e; border-color: #a8ddb9; }
+    .rule-badge.investor { background: #fdf0da; color: #b8791c; border-color: #f0d4a8; }
+
+    .meter-box-spec {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 700; font-size: 1rem;
+      color: #0f6b3e; background: #e1f5ea;
+      padding: 6px 16px; border-radius: 40px;
+    }
+    .meter-box-spec i { font-size: 0.9rem; }
+
+    .cable-section-title {
+      font-size: 0.85rem; font-weight: 600; color: #1f4a66;
+      padding: 6px 0 8px 0; display: flex; align-items: center; gap: 6px;
+      border-bottom: 1px dashed #d4e4f0; margin-bottom: 8px;
+    }
+    .cable-section-title i {
+      color: #2c7fb8; font-size: 0.85rem; background: #e4f0f9;
+      padding: 4px; border-radius: 8px; width: 22px; text-align: center;
+    }
+    .cable-section-title.sub i { color: #1f9e5a; background: #e1f5ea; }
+    .cable-table {
+      width: 100%; border-collapse: separate; border-spacing: 0;
+      border-radius: 12px; overflow: hidden; border: 1px solid #dce9f4;
+      font-size: 0.88rem;
+    }
+    .cable-table thead th {
+      background: #eef6fc; color: #1f4a66; font-weight: 600;
+      font-size: 0.8rem; text-align: left; padding: 10px 16px;
+      letter-spacing: 0.02em; border-bottom: 1px solid #dce9f4;
+    }
+    .cable-table tbody td {
+      padding: 11px 16px; border-bottom: 1px solid #eef4fa;
+      color: #0b2b40; font-weight: 500; vertical-align: middle;
+    }
+    .cable-table tbody tr:last-child td { border-bottom: none; }
+    .cable-table tbody tr:nth-child(even) td { background: #fbfdff; }
+    .cable-table .cable-label { display: flex; align-items: center; gap: 8px; color: #325e7c; font-size: 0.85rem; }
+    .cable-table .cable-label i { width: 18px; text-align: center; color: #2c7fb8; font-size: 0.85rem; }
+    .cable-table .cable-value { font-weight: 700; color: #0b2b40; }
+    .cable-table .cable-value.copper { color: #b34a1c; }
+    .cable-table .cable-value.aluminum { color: #1e6b9e; }
+    .cable-table .cable-value.distance { color: #0f6b3e; }
+    .cable-note {
+      margin-top: 12px; font-size: 0.8rem; color: #5f7d95;
+      line-height: 1.5; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .cable-note i { color: #2c7fb8; margin-top: 2px; }
+
+    .empty-banner {
+      background: #fff8ee; border: 1px solid #f5d8a8; border-left: 5px solid #e8a33d;
+      border-radius: 14px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 0.88rem; color: #7a4d0b; line-height: 1.6;
+      display: flex; gap: 10px; align-items: flex-start;
+    }
+    .empty-banner i { color: #e8a33d; font-size: 1.2rem; margin-top: 2px; }
+    .empty-banner strong { color: #5c3908; }
+    .empty-banner.hidden { display: none; }
+
+    .admin-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, #edf9f1, #e1f5ea);
+      border-radius: 14px; padding: 12px 16px; margin-bottom: 22px;
+      border: 1px solid #b8e0c8; font-size: 0.85rem;
+      transition: all 0.3s;
+    }
+    .admin-bar .admin-status {
+      display: flex; align-items: center; gap: 8px;
+      color: #0f6b3e; font-weight: 500;
+    }
+    .admin-bar .admin-status i { color: #1f9e5a; font-size: 0.95rem; width: 16px; text-align: center; }
+
+    .admin-btn {
+      background: white; border: 1px solid #cddfeb; color: #1f4a66;
+      padding: 7px 14px; border-radius: 10px; font-family: inherit;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .admin-btn:hover { background: #f0f7fe; border-color: #2c7fb8; color: #1e6b9e; transform: translateY(-1px); }
+    .admin-btn.logout { border-color: #f5cfb9; color: #b34a1c; }
+    .admin-btn.logout:hover { background: #fde8dd; border-color: #d96b30; color: #8e3a14; }
+
+    .admin-only { position: relative; transition: all 0.25s ease; }
+    .admin-only.locked { display: none; }
+
+    .tier-section {
+      background: #f4f9fe; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 12px;
+      border: 1px solid #dce9f4;
+    }
+    .tier-section:last-child { margin-bottom: 0; }
+    .tier-section.investor-section { background: #fffaf0; border-color: #f0d4a8; }
+    .tier-section.class4-section { background: #f0f9ff; border-color: #b8d9e6; }
+    .tier-title {
+      display: flex; align-items: center;
+      font-size: 0.82rem; font-weight: 600; color: #1f4a66;
+      margin-bottom: 10px; gap: 6px;
+    }
+    .tier-title i { color: #2c7fb8; font-size: 0.9rem; }
+    .tier-title .tier-reset-btn {
+      margin-left: auto; background: white; border: 1px solid #cddfeb; color: #5f7d95;
+      padding: 3px 10px; border-radius: 8px; font-family: inherit;
+      font-size: 0.72rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tier-title .tier-reset-btn:hover { background: #f0f7fe; border-color: #2c7fb8; color: #1e6b9e; }
+    .tier-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; min-height: 26px; }
+    .tier-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: white; border: 1px solid #cddfeb; color: #0b2b40;
+      padding: 4px 6px 4px 10px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 600;
+      transition: all 0.15s;
+    }
+    .tier-tag:hover { border-color: #2c7fb8; }
+    .tier-tag button {
+      background: #e9f0f7; border: none; color: #5f7d95;
+      width: 18px; height: 18px; border-radius: 50%;
+      font-size: 0.75rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; transition: all 0.15s;
+    }
+    .tier-tag button:hover { background: #fde8dd; color: #b34a1c; }
+    .tier-tag.excluded { background: #fff4ee; border-color: #f5cfb9; color: #b34a1c; text-decoration: line-through; opacity: 0.7; }
+    .tier-add-row { display: flex; gap: 6px; }
+    .tier-add-row input,
+    .tier-add-row select {
+      flex: 1; padding: 8px 12px; border: 1px solid #cddfeb;
+      border-radius: 10px; font-family: inherit; font-size: 0.85rem;
+      color: #0b2b40; outline: none; transition: all 0.2s;
+      background: white;
+    }
+    .tier-add-row input:focus,
+    .tier-add-row select:focus { border-color: #2c7fb8; box-shadow: 0 0 0 3px rgba(44, 127, 184, 0.15); }
+    .tier-add-row select {
+      cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f7d95' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat; background-position: right 10px center;
+      background-size: 14px; padding-right: 30px;
+    }
+    .tier-add-row button {
+      background: #2c7fb8; border: none; color: white;
+      padding: 8px 14px; border-radius: 10px; font-family: inherit;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+      transition: all 0.2s; white-space: nowrap;
+    }
+    .tier-add-row button:hover { background: #1e6b9e; transform: translateY(-1px); }
+    .tier-tag.province { background: #fff8ee; border-color: #f5d8a8; }
+    .tier-tag.province:hover { border-color: #e8a33d; }
+    .tier-tag.province button:hover { background: #fde8dd; color: #b34a1c; }
+    .tier-tag.province-class3 { background: #f0f7fe; border-color: #b8d0e6; }
+    .tier-tag.province-class3:hover { border-color: #2c7fb8; }
+    .tier-tag.province-class4 { background: #f0f9ff; border-color: #b8d9e6; color: #1a4d5c; }
+    .tier-tag.province-class4:hover { border-color: #4a9bb8; }
+    .class3-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 12px; background: #e4f0f9; color: #1e6b9e; margin-left: 6px;
+    }
+    .class4-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 12px; background: #d6ecf5; color: #1a6a8a; margin-left: 6px;
+    }
+    .investor-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 12px; background: #fdf0da; color: #b8791c; margin-left: 6px;
+    }
+
+    .investor-block {
+      background: white; border: 1px solid #f0d4a8;
+      border-radius: 12px; padding: 12px 14px;
+      margin-bottom: 10px; transition: all 0.2s;
+    }
+    .investor-block:hover { box-shadow: 0 4px 12px -4px rgba(232, 163, 61, 0.25); }
+    .investor-block-header {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .investor-block-header input {
+      flex: 1; padding: 6px 10px;
+      border: 1px solid #f0d4a8; border-radius: 8px;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      color: #b8791c; background: #fffaf0;
+      outline: none; transition: all 0.2s;
+    }
+    .investor-block-header input:focus { border-color: #e8a33d; box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.15); }
+    .investor-block-header .inv-del-btn {
+      background: #fde8dd; border: 1px solid #f5cfb9; color: #b34a1c;
+      width: 28px; height: 28px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; transition: all 0.2s;
+    }
+    .investor-block-header .inv-del-btn:hover { background: #f9d5c0; color: #8e3a14; }
+    .investor-block .tier-tags { margin-bottom: 8px; min-height: 24px; }
+    .investor-block .tier-add-row { gap: 4px; }
+    .investor-block .tier-add-row input {
+      padding: 6px 10px; font-size: 0.8rem; border-color: #f0d4a8;
+    }
+    .investor-block .tier-add-row input:focus { border-color: #e8a33d; box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.15); }
+    .investor-block .tier-add-row button {
+      background: #e8a33d; padding: 6px 12px; font-size: 0.78rem;
+    }
+    .investor-block .tier-add-row button:hover { background: #d18e24; }
+    .investor-block .tier-tag { background: #fffaf0; border-color: #f0d4a8; }
+    .investor-block .tier-tag:hover { border-color: #e8a33d; }
+    .investor-block .tier-tag button { background: #fdf0da; color: #b8791c; }
+    .investor-block .tier-tag button:hover { background: #fde8dd; color: #b34a1c; }
+
+    .add-investor-btn {
+      width: 100%; padding: 10px 14px;
+      background: white; border: 1px dashed #e8a33d; color: #b8791c;
+      border-radius: 10px; font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 6px; transition: all 0.2s;
+    }
+    .add-investor-btn:hover { background: #fffaf0; border-style: solid; }
+
+    .province-bind-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: white; border: 1px solid #f0d4a8; color: #0b2b40;
+      padding: 5px 8px 5px 12px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .province-bind-tag .arrow { color: #e8a33d; margin: 0 2px; }
+    .province-bind-tag .inv-name { color: #b8791c; font-weight: 700; }
+    .province-bind-tag button {
+      background: #fdf0da; border: none; color: #b8791c;
+      width: 18px; height: 18px; border-radius: 50%;
+      font-size: 0.75rem; line-height: 1; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0; transition: all 0.15s;
+    }
+    .province-bind-tag button:hover { background: #fde8dd; color: #b34a1c; }
+
+    .investor-toggle-banner {
+      background: linear-gradient(135deg, #fffaf0, #fdf0da);
+      border: 1px solid #f0d4a8;
+      border-left: 5px solid #e8a33d;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      font-size: 0.88rem;
+      color: #7a4d0b;
+      line-height: 1.6;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .investor-toggle-banner i.handshake-icon {
+      color: #e8a33d; font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .investor-toggle-content {
+      display: flex; align-items: center; gap: 12px;
+      flex: 1; min-width: 200px; flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .investor-toggle-text { flex: 1; min-width: 180px; }
+    .investor-toggle-text strong { color: #5c3908; font-weight: 700; }
+    .investor-toggle-switch {
+      display: flex; background: white;
+      border-radius: 30px; padding: 3px; gap: 3px;
+      border: 1px solid #f0d4a8;
+      flex-shrink: 0;
+    }
+    .investor-toggle-switch button {
+      border: none; background: transparent;
+      padding: 7px 16px; border-radius: 30px;
+      font-size: 0.82rem; font-weight: 600;
+      color: #b8791c;
+      cursor: pointer; transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+    }
+    .investor-toggle-switch button:hover { background: #fffaf0; }
+    .investor-toggle-switch button.active {
+      background: linear-gradient(135deg, #e8a33d, #d18e24);
+      color: white;
+      box-shadow: 0 2px 6px rgba(232, 163, 61, 0.3);
+    }
+    .investor-toggle-switch button.active:hover {
+      background: linear-gradient(135deg, #d18e24, #c0801e);
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(11, 43, 64, 0.55);
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+    }
+    .modal {
+      background: white; border-radius: 22px; padding: 28px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
+      animation: modalIn 0.25s ease;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .modal h3 {
+      font-size: 1.2rem; color: #0b2b40; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .modal h3 i { color: #2c7fb8; background: #e4f0f9; padding: 10px; border-radius: 12px; font-size: 1rem; }
+    .modal-subtitle { font-size: 0.82rem; color: #5f7d95; margin-bottom: 20px; margin-left: 50px; line-height: 1.5; }
+    .modal input[type="password"] {
+      width: 100%; padding: 14px 16px; border: 1px solid #cddfeb;
+      border-radius: 12px; font-family: inherit; font-size: 1rem;
+      color: #0b2b40; outline: none; transition: all 0.2s;
+      letter-spacing: 0.12em; background: white;
+    }
+    .modal input[type="password"]:focus { border-color: #2c7fb8; box-shadow: 0 0 0 4px rgba(44, 127, 184, 0.15); }
+    .modal-error { color: #b34a1c; font-size: 0.82rem; margin-top: 10px; min-height: 1.2em; display: none; }
+    .modal-error.show { display: block; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .modal-actions button {
+      flex: 1; padding: 13px; border-radius: 12px;
+      font-family: inherit; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; border: 1px solid; transition: all 0.2s;
+    }
+    .modal-actions .btn-cancel { background: white; border-color: #cddfeb; color: #325e7c; }
+    .modal-actions .btn-cancel:hover { background: #f4f9fe; border-color: #2c7fb8; }
+    .modal-actions .btn-confirm { background: #2c7fb8; border-color: #2c7fb8; color: white; }
+    .modal-actions .btn-confirm:hover { background: #1e6b9e; border-color: #1e6b9e; }
+
+    @media (max-width: 1000px) {
+      .main { flex-direction: column; padding: 24px; }
+      .config-panel, .result-panel { min-width: 100%; }
+      .header h1 { font-size: 1.5rem; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 500px) {
+      .header { flex-wrap: wrap; }
+      .header span { margin-left: 0; }
+      .admin-bar { flex-wrap: wrap; gap: 8px; }
+      .investor-toggle-content { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header" id="appHeader" title="双击标题也可打开管理员登录">
+      <i class="fas fa-bolt"></i>
+      <h1>逆变器选型工具</h1>
+      <span id="headerBadge"><i class="fas fa-map-marker-alt"></i> 省市县三级容配比绑定</span>
+      <button class="admin-entry-btn" id="adminEntryBtn" title="管理员登录">
+        <i class="fas fa-key"></i>
+      </button>
+    </div>
+
+    <div class="main">
+      <div class="config-panel">
+        <h2><i class="fas fa-pen"></i> 输入参数</h2>
+
+        <div class="admin-bar" id="adminBar" style="display: none;">
+          <div class="admin-status" id="adminStatus">
+            <i class="fas fa-lock-open"></i>
+            <span>管理员模式 · 配置已解锁</span>
+          </div>
+          <button class="admin-btn logout" id="adminLogoutBtn">
+            <i class="fas fa-sign-out-alt"></i> 退出管理员
+          </button>
+        </div>
+
+        <div class="empty-banner" id="emptyBanner">
+          <i class="fas fa-info-circle"></i>
+          <div>
+            当前无省市县数据。请<strong>导入 Excel 容配比表</strong>，或点击下方
+            <strong>「加载示例数据」</strong> 使用内置的省市县模板。
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-map"></i> 项目省份</label>
+          <div class="select-wrapper">
+            <select id="provinceSelect">
+              <option value="">-- 请选择省份 --</option>
+            </select>
+            <i class="fas fa-chevron-down select-icon"></i>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-city"></i> 项目城市</label>
+          <div class="select-wrapper">
+            <select id="citySelect" disabled>
+              <option value="">-- 请先选择省份 --</option>
+            </select>
+            <i class="fas fa-chevron-down select-icon"></i>
+          </div>
+          <div class="hint" id="cityHint">选择省份后自动加载该省的城市列表</div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-map-pin"></i> 项目区县</label>
+          <div class="select-wrapper">
+            <select id="districtSelect" disabled>
+              <option value="">-- 请先选择城市 --</option>
+            </select>
+            <i class="fas fa-chevron-down select-icon"></i>
+          </div>
+          <div class="hint" id="districtHint">选择区县后自动加载该区县绑定的容配比</div>
+        </div>
+
+        <div class="location-info" id="locationInfo" style="display:none;"></div>
+
+        <div class="investor-toggle-banner" id="investorBanner" style="display: none;">
+          <i class="fas fa-handshake handshake-icon"></i>
+          <div class="investor-toggle-content">
+            <div class="investor-toggle-text">
+              本项目省份可绑定资方 <strong id="investorBannerName">—</strong>，是否按资方要求选型？
+            </div>
+            <div class="investor-toggle-switch" id="investorToggleSwitch">
+              <button class="active" data-investor="yes" type="button">按资方选型</button>
+              <button data-investor="no" type="button">不按资方</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-solar-panel"></i> 单块组件功率</label>
+          <div class="select-wrapper">
+            <select id="panelPower"></select>
+            <i class="fas fa-chevron-down select-icon"></i>
+          </div>
+          <div class="input-wrapper" id="panelPowerCustomWrapper"
+               style="display:none; margin-top: 8px;">
+            <input type="number" id="panelPowerCustom"
+                   min="100" max="1000" step="5"
+                   placeholder="请输入 100 ~ 1000 之间的功率值">
+            <div class="unit">W</div>
+          </div>
+          <div class="hint" id="panelPowerHint">
+            峰值瓦特 (Wp)，可从下拉选择，也可选「自定义」手动输入（100W ~ 1000W）
+          </div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-th"></i> 组件总块数</label>
+          <div class="input-wrapper" id="panelCountWrapper">
+            <input type="number" id="panelCount" value="500" min="1" max="10000" step="1">
+            <div class="unit">块</div>
+          </div>
+          <div class="hint" id="panelCountHint">直流侧功率 = 组件功率 × 块数，需 ≤ 400 kW</div>
+        </div>
+
+        <div class="param-group">
+          <label><i class="fas fa-chart-pie"></i> 容配比上限 (DC/AC)</label>
+          <div class="input-wrapper">
+            <input type="number" id="dcAcRatio" value="1.10" min="1.0" max="1.2" step="0.01" readonly>
+            <div class="unit">倍</div>
+          </div>
+          <div class="hint" id="ratioHint">选择区县后自动填入该区县绑定的容配比上限</div>
+        </div>
+
+        <div class="param-group admin-only locked" id="base55Group">
+          <label><i class="fas fa-map-marked-alt"></i> 第一类：55kW 基数省份</label>
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 河南、黑龙江、吉林等（台数基数 55kW）
+              <button class="tier-reset-btn" id="base55ResetBtn">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="base55Tags"></div>
+            <div class="tier-add-row">
+              <select id="base55ProvinceSelect">
+                <option value="">-- 选择省份 --</option>
+              </select>
+              <button id="base55AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="class3Group">
+          <label><i class="fas fa-layer-group"></i> 第三类：仅功率档位不同省份</label>
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 台数基数 50kW，功率档位独立配置
+              <button class="tier-reset-btn" id="class3ResetBtn">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="class3Tags"></div>
+            <div class="tier-add-row">
+              <select id="class3ProvinceSelect">
+                <option value="">-- 选择省份 --</option>
+              </select>
+              <button id="class3AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="class4Group">
+          <label><i class="fas fa-layer-group"></i> 第四类：仅功率档位不同省份（新增）</label>
+          <div class="tier-section class4-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 台数基数 50kW，功率档位独立配置（与第三类独立）
+              <button class="tier-reset-btn" id="class4ResetBtn">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="class4Tags"></div>
+            <div class="tier-add-row">
+              <select id="class4ProvinceSelect">
+                <option value="">-- 选择省份 --</option>
+              </select>
+              <button id="class4AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="investorsGroup">
+          <label><i class="fas fa-handshake"></i> 资方管理</label>
+          <div class="tier-section investor-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 资方列表（每个资方独立配置逆变器功率档位）
+              <button class="tier-reset-btn" id="investorsResetBtn">恢复默认</button>
+            </div>
+            <div id="investorsList"></div>
+            <button class="add-investor-btn" id="addInvestorBtn">
+              <i class="fas fa-plus"></i> 新增资方
+            </button>
+          </div>
+
+          <div class="tier-section investor-section" style="margin-top: 12px;">
+            <div class="tier-title">
+              <i class="fas fa-link"></i> 省份 → 资方 绑定
+            </div>
+            <div class="tier-tags" id="provinceInvestorTags"></div>
+            <div class="tier-add-row">
+              <select id="bindProvinceSelect">
+                <option value="">-- 选择省份 --</option>
+              </select>
+              <select id="bindInvestorSelect">
+                <option value="">-- 选择资方 --</option>
+              </select>
+              <button id="bindProvinceAddBtn"><i class="fas fa-plus"></i> 绑定</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="powerTiersGroup">
+          <label><i class="fas fa-sliders-h"></i> 功率档位管理</label>
+
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-solar-panel"></i> 组件功率档位（W）
+              <button class="tier-reset-btn" data-target="panel">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="panelPowerTags"></div>
+            <div class="tier-add-row">
+              <input type="number" id="panelPowerNew" min="100" max="1000" step="5"
+                     placeholder="如 760（100~1000 W）">
+              <button id="panelPowerAddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-microchip"></i> 逆变器功率（55kW 基数省份）
+              <button class="tier-reset-btn" data-target="inv55">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="invPowers55Tags"></div>
+            <div class="tier-add-row">
+              <input type="number" id="invPower55New" min="1" max="200" step="1"
+                     placeholder="如 60（kW）">
+              <button id="invPower55AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-microchip"></i> 逆变器功率（其他省份 / 默认）
+              <button class="tier-reset-btn" data-target="inv50">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="invPowers50Tags"></div>
+            <div class="tier-add-row">
+              <input type="number" id="invPower50New" min="1" max="200" step="1"
+                     placeholder="如 60（kW）">
+              <button id="invPower50AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-microchip"></i> 逆变器功率（第三类省份）
+              <button class="tier-reset-btn" data-target="invClass3">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="invPowersClass3Tags"></div>
+            <div class="tier-add-row">
+              <input type="number" id="invPowerClass3New" min="1" max="200" step="1"
+                     placeholder="如 60（kW）">
+              <button id="invPowerClass3AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+
+          <div class="tier-section class4-section">
+            <div class="tier-title">
+              <i class="fas fa-microchip"></i> 逆变器功率（第四类省份）
+              <button class="tier-reset-btn" data-target="invClass4">恢复默认</button>
+            </div>
+            <div class="tier-tags" id="invPowersClass4Tags"></div>
+            <div class="tier-add-row">
+              <input type="number" id="invPowerClass4New" min="1" max="200" step="1"
+                     placeholder="如 60（kW）">
+              <button id="invPowerClass4AddBtn"><i class="fas fa-plus"></i> 添加</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="meterBoxRulesGroup">
+          <label><i class="fas fa-box"></i> 表箱规则</label>
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 表箱规格匹配规则
+              <button class="tier-reset-btn" id="meterBoxResetAllBtn">恢复默认</button>
+            </div>
+            <div class="hint" style="margin-left: 0;">
+              <i class="fas fa-file-excel" style="color:#1f9e5a;"></i>
+              通过 Excel 导入配置：<br>
+              · Sheet「<strong>表箱规则55</strong>」：<code>最大功率(kW) | 表箱规格</code><br>
+              · Sheet「<strong>表箱规则其他</strong>」：<code>最大功率(kW) | 表箱规格</code><br>
+              <span style="display: block; margin-top: 6px;">
+                当前规则：55基数 <strong id="meterBoxCount55">10</strong> 条 / 其他 <strong id="meterBoxCountDefault">10</strong> 条
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="cableRulesGroup">
+          <label><i class="fas fa-plug"></i> 交流电缆规则</label>
+          <div class="tier-section">
+            <div class="tier-title">
+              <i class="fas fa-info-circle"></i> 交流电缆匹配规则
+              <button class="tier-reset-btn" id="cableResetAllBtn">恢复默认</button>
+            </div>
+            <div class="hint" style="margin-left: 0;">
+              <i class="fas fa-file-excel" style="color:#1f9e5a;"></i>
+              通过 Excel 导入配置：<br>
+              · Sheet「<strong>电缆规则55</strong>」：<code>最大功率(kW) | 铜 | 铝 | 距离</code><br>
+              · Sheet「<strong>电缆规则其他</strong>」：<code>最大功率(kW) | 铜 | 铝 | 距离</code><br>
+              <span style="display: block; margin-top: 6px;">
+                当前规则：55基数 <strong id="cableCount55">10</strong> 条 / 其他 <strong id="cableCountDefault">10</strong> 条
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="importGroup">
+          <label><i class="fas fa-file-excel"></i> 导入 Excel 配置文件</label>
+          <div class="input-wrapper" style="padding: 10px 14px;">
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls"
+                   style="font-size: 0.85rem; color: #325e7c; padding: 0;">
+          </div>
+          <div class="hint">
+            支持 6 个 sheet（按名称匹配）：<br>
+            · Sheet1「<strong>区县表</strong>」：<code>省份 | 市 | 区县 | 容配比</code><br>
+            · Sheet2「<strong>省份默认</strong>」：<code>省份 | 默认容配比</code>（可选）<br>
+            · Sheet3「<strong>表箱规则55</strong>」 / Sheet4「<strong>表箱规则其他</strong>」<br>
+            · Sheet5「<strong>电缆规则55</strong>」 / Sheet6「<strong>电缆规则其他</strong>」
+          </div>
+        </div>
+
+        <div class="param-group admin-only locked" id="dataOpsGroup">
+          <label><i class="fas fa-tools"></i> 数据操作</label>
+          <div class="btn-row">
+            <button class="btn-reset btn-primary" id="loadSampleBtn">
+              <i class="fas fa-database"></i> 加载示例数据
+            </button>
+            <button class="btn-reset" id="exportExcelBtn">
+              <i class="fas fa-download"></i> 导出 Excel
+            </button>
+          </div>
+          <button class="btn-reset btn-danger" id="clearDataBtn" style="margin-top: 10px;">
+            <i class="fas fa-trash-alt"></i> 清空数据并重置
+          </button>
+        </div>
+
+        <div class="hint" id="tableStatsHint" style="margin-bottom: 8px;"></div>
+
+        <button class="btn-reset" id="resetDefaults">
+          <i class="fas fa-undo-alt"></i> 恢复默认参数（组件功率/块数）
+        </button>
+      </div>
+
+      <div class="result-panel">
+        <div class="card" id="mainResultCard">
+          <div class="card-title" id="mainCardTitle">
+            <i class="fas fa-calculator" id="mainCardIcon"></i>
+            <span id="resultCardTitle">选型结果</span>
+            <span class="investor-badge" id="investorTitleBadge" style="display: none;">—</span>
+          </div>
+          <div class="result-grid">
+            <div class="result-item">
+              <span class="label"><i class="fas fa-sun"></i> 直流侧总功率</span>
+              <span class="value" id="displayDcTotal">275.00 <small>kW</small></span>
+            </div>
+            <div class="result-item">
+              <span class="label"><i class="fas fa-bolt"></i> 交流侧计算功率</span>
+              <span class="value highlight-value" id="displayAcRequired">250.0 <small>kW</small></span>
+            </div>
+            <div class="result-item">
+              <span class="label"><i class="fas fa-microchip"></i> <span id="comboLabel">最终逆变器方案</span></span>
+              <span class="value" id="displayInverterCombo">50kW × 5 台</span>
+            </div>
+            <div class="result-item">
+              <span class="label"><i class="fas fa-layer-group"></i> 实际容配比</span>
+              <span class="value" id="displayActualRatio">1.100</span>
+            </div>
+          </div>
+
+          <div class="rule-badges-wrap">
+            <div class="rule-badges-title">
+              <i class="fas fa-ruler"></i>
+              台数规则（<span id="ruleProvinceName">省份</span>，基数 <span id="ruleBasePower">50</span> kW）
+            </div>
+            <div class="rule-badges" id="ruleBadges"></div>
+          </div>
+
+          <div class="rule-badges-wrap investor-wrap" id="investorBadgesWrap" style="display: none;">
+            <div class="rule-badges-title">
+              <i class="fas fa-list" style="color: #e8a33d;"></i>
+              <span id="investorBadgeTitle">资方专用逆变器功率档位</span>
+            </div>
+            <div class="rule-badges" id="investorPowerBadges"></div>
+          </div>
+
+          <div class="trace-row" id="meterBoxRow">
+            <span class="trace-label"><i class="fas fa-box"></i>表箱规格</span>
+            <span class="trace-value" id="meterBoxText">—</span>
+          </div>
+
+          <div class="trace-row" id="ratioCheckRow">
+            <span class="trace-label"><i class="fas fa-check-circle"></i>容配比校核（实际 ≤ 区县上限）</span>
+            <span id="ratioCheckBadge" class="ratio-check ok">符合要求</span>
+          </div>
+
+          <div class="summary-note" id="summaryNote">
+            <i class="fas fa-info-circle" id="summaryIcon"></i>
+            <div id="summaryText">请先导入 Excel 或加载示例数据。</div>
+          </div>
+        </div>
+
+        <div class="card" id="cableCard">
+          <div class="card-title">
+            <i class="fas fa-plug"></i> 交流电缆选型
+          </div>
+          <div id="cableContent"></div>
+          <div class="cable-note" id="cableNote">
+            <i class="fas fa-info-circle"></i>
+            <span>根据逆变器总功率匹配对应电缆规格</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="loginModal" style="display:none;">
+    <div class="modal">
+      <h3><i class="fas fa-lock"></i> 管理员登录</h3>
+      <div class="modal-subtitle">请输入管理员密码以解锁容配比配置功能</div>
+      <input type="password" id="adminPasswordInput" placeholder="请输入密码" autocomplete="off">
+      <div class="modal-error" id="loginError"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="loginCancelBtn">取消</button>
+        <button class="btn-confirm" id="loginConfirmBtn">登录</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // 管理员
+    // ============================================================
+    const ADMIN_PASSWORD_B64 = 'YWRtaW4yMDI0';
+    const ADMIN_SESSION_KEY = 'inverter_admin_session_v1';
+    let isAdmin = false;
+
+    function readAdminSession() { try { return sessionStorage.getItem(ADMIN_SESSION_KEY) === '1'; } catch (e) { return false; } }
+    function writeAdminSession(val) {
+      try { if (val) sessionStorage.setItem(ADMIN_SESSION_KEY, '1'); else sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch (e) {}
+    }
+
+    function applyAdminUI() {
+      const adminBar = document.getElementById('adminBar');
+      const headerBadge = document.getElementById('headerBadge');
+      const adminEntryBtn = document.getElementById('adminEntryBtn');
+      const adminOnlyEls = document.querySelectorAll('.admin-only');
+      if (isAdmin) {
+        adminBar.style.display = 'flex';
+        headerBadge.className = 'admin-badge';
+        headerBadge.innerHTML = '<i class="fas fa-user-shield"></i> 管理员模式';
+        adminEntryBtn.classList.add('logout');
+        adminEntryBtn.title = '退出管理员';
+        adminEntryBtn.innerHTML = '<i class="fas fa-user-shield"></i>';
+        adminOnlyEls.forEach(el => el.classList.remove('locked'));
+      } else {
+        adminBar.style.display = 'none';
+        headerBadge.className = '';
+        headerBadge.innerHTML = '<i class="fas fa-map-marker-alt"></i> 省市县三级容配比绑定';
+        adminEntryBtn.classList.remove('logout');
+        adminEntryBtn.title = '管理员登录';
+        adminEntryBtn.innerHTML = '<i class="fas fa-key"></i>';
+        adminOnlyEls.forEach(el => el.classList.add('locked'));
+      }
+    }
+
+    function showLoginModal() {
+      const modal = document.getElementById('loginModal');
+      const input = document.getElementById('adminPasswordInput');
+      const err = document.getElementById('loginError');
+      input.value = ''; err.textContent = ''; err.classList.remove('show');
+      modal.style.display = 'flex';
+      setTimeout(() => input.focus(), 60);
+    }
+    function hideLoginModal() { document.getElementById('loginModal').style.display = 'none'; }
+    function tryAdminLogin() {
+      const input = document.getElementById('adminPasswordInput');
+      const err = document.getElementById('loginError');
+      const pass = input.value;
+      if (!pass) { err.textContent = '请输入管理员密码'; err.classList.add('show'); return; }
+      let encoded = ''; try { encoded = btoa(pass); } catch (e) {}
+      if (encoded === ADMIN_PASSWORD_B64) {
+        isAdmin = true; writeAdminSession(true); applyAdminUI(); hideLoginModal();
+      } else {
+        err.textContent = '密码错误，请重试'; err.classList.add('show'); input.select();
+      }
+    }
+
+    // ============================================================
+    // 默认配置
+    // ============================================================
+    const PANEL_POWER_MAX = 1000;
+    const PANEL_POWER_MIN = 100;
+
+    const DEFAULT_PANEL_POWER_OPTIONS = [715, 720, 725, 730, 735, 740, 775, 780, 785, 790, 795, 800, 850, 900, 950, 1000];
+    const DEFAULT_INVERTER_POWERS_55 = [15, 20, 25, 33, 36, 39, 44, 50, 55];
+    const DEFAULT_INVERTER_POWERS_50 = [15, 20, 25, 30, 33, 36, 40, 45, 50];
+    const DEFAULT_INVERTER_POWERS_CLASS3 = [20, 25, 30, 33, 36, 40, 45, 50];
+    const DEFAULT_INVERTER_POWERS_CLASS4 = [10, 15, 20, 30, 40, 50, 60, 75, 100];
+
+    const DEFAULT_INVESTORS = [
+      { id: 'inv_a', name: '资方A', powers: [20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 100] },
+      { id: 'inv_b', name: '资方B', powers: [25, 30, 33, 36, 40, 45, 50, 60, 70, 80, 100] }
+    ];
+    const DEFAULT_PROVINCE_INVESTOR_MAP = {
+      '湖南省': 'inv_a', '山西省': 'inv_a', '山东省': 'inv_a',
+      '浙江省': 'inv_a', '江苏省': 'inv_a', '上海市': 'inv_b', '河南省': 'inv_a'
+    };
+
+    let panelPowerOptions = [...DEFAULT_PANEL_POWER_OPTIONS];
+    let inverterPowers55 = [...DEFAULT_INVERTER_POWERS_55];
+    let inverterPowers50 = [...DEFAULT_INVERTER_POWERS_50];
+    let inverterPowersClass3 = [...DEFAULT_INVERTER_POWERS_CLASS3];
+    let inverterPowersClass4 = [...DEFAULT_INVERTER_POWERS_CLASS4];
+    let investors = JSON.parse(JSON.stringify(DEFAULT_INVESTORS));
+    let provinceInvestorMap = { ...DEFAULT_PROVINCE_INVESTOR_MAP };
+
+    const MULTI_UNIT_EXCLUDED_POWERS = [15, 20, 25];
+    const DEFAULT_BASE_55_PROVINCES = ['河南省', '黑龙江省', '吉林省'];
+    let base55Provinces = new Set(DEFAULT_BASE_55_PROVINCES);
+    let class3Provinces = new Set([]);
+    let class4Provinces = new Set([]);
+
+    const DEFAULT_METER_BOX_RULES_55 = [
+      { maxPower: 33,  spec: '63A表箱' }, { maxPower: 55,  spec: '100A表箱' },
+      { maxPower: 66,  spec: '125A一进一出表箱' }, { maxPower: 110, spec: '200A二进一出表箱' },
+      { maxPower: 165, spec: '315A三进一出（表箱）并网柜' }, { maxPower: 220, spec: '400A四进一出（表箱）并网柜' },
+      { maxPower: 275, spec: '5进一出（表箱）并网柜' }, { maxPower: 330, spec: '6进一出（表箱）并网柜' },
+      { maxPower: 385, spec: '7进一出（表箱）并网柜' }, { maxPower: 400, spec: '8进一出（表箱）并网柜' }
+    ];
+    const DEFAULT_METER_BOX_RULES_DEFAULT = [
+      { maxPower: 30,  spec: '63A表箱' }, { maxPower: 50,  spec: '100A表箱' },
+      { maxPower: 60,  spec: '125A一进一出表箱' }, { maxPower: 100, spec: '200A二进一出表箱' },
+      { maxPower: 150, spec: '315A三进一出（表箱）并网柜' }, { maxPower: 200, spec: '400A四进一出（表箱）并网柜' },
+      { maxPower: 250, spec: '5进一出（表箱）并网柜' }, { maxPower: 300, spec: '6进一出（表箱）并网柜' },
+      { maxPower: 350, spec: '7进一出（表箱）并网柜' }, { maxPower: 400, spec: '8进一出（表箱）并网柜' }
+    ];
+    let meterBoxRules55 = JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_55));
+    let meterBoxRulesDefault = JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_DEFAULT));
+
+    const DEFAULT_CABLE_RULES_55 = [
+      { maxPower: 33,  copper: 'YJV-3×25+1×16',  aluminum: 'YJLV-3×35+1×16',  distance: '≤150m' },
+      { maxPower: 55,  copper: 'YJV-3×35+1×16',  aluminum: 'YJLV-3×50+1×25',  distance: '≤150m' },
+      { maxPower: 66,  copper: 'YJV-3×50+1×25',  aluminum: 'YJLV-3×70+1×35',  distance: '≤150m' },
+      { maxPower: 110, copper: 'YJV-3×70+1×35',  aluminum: 'YJLV-3×95+1×50',  distance: '≤120m' },
+      { maxPower: 165, copper: 'YJV-3×95+1×50',  aluminum: 'YJLV-3×150+1×70', distance: '≤100m' },
+      { maxPower: 220, copper: 'YJV-3×150+1×70', aluminum: 'YJLV-3×185+1×95', distance: '≤100m' },
+      { maxPower: 275, copper: 'YJV-3×185+1×95', aluminum: 'YJLV-3×240+1×120', distance: '≤80m' },
+      { maxPower: 330, copper: 'YJV-3×240+1×120', aluminum: 'YJLV-3×300+1×150', distance: '≤80m' },
+      { maxPower: 385, copper: 'YJV-3×300+1×150', aluminum: 'YJLV-2×(3×185+1×95)', distance: '≤60m' },
+      { maxPower: 400, copper: 'YJV-3×300+1×150', aluminum: 'YJLV-2×(3×185+1×95)', distance: '≤60m' }
+    ];
+    const DEFAULT_CABLE_RULES_DEFAULT = [
+      { maxPower: 30,  copper: 'YJV-3×25+1×16',  aluminum: 'YJLV-3×35+1×16',  distance: '≤150m' },
+      { maxPower: 50,  copper: 'YJV-3×35+1×16',  aluminum: 'YJLV-3×50+1×25',  distance: '≤150m' },
+      { maxPower: 60,  copper: 'YJV-3×50+1×25',  aluminum: 'YJLV-3×70+1×35',  distance: '≤150m' },
+      { maxPower: 100, copper: 'YJV-3×70+1×35',  aluminum: 'YJLV-3×95+1×50',  distance: '≤120m' },
+      { maxPower: 150, copper: 'YJV-3×95+1×50',  aluminum: 'YJLV-3×150+1×70', distance: '≤100m' },
+      { maxPower: 200, copper: 'YJV-3×150+1×70', aluminum: 'YJLV-3×185+1×95', distance: '≤100m' },
+      { maxPower: 250, copper: 'YJV-3×185+1×95', aluminum: 'YJLV-3×240+1×120', distance: '≤80m' },
+      { maxPower: 300, copper: 'YJV-3×240+1×120', aluminum: 'YJLV-3×300+1×150', distance: '≤80m' },
+      { maxPower: 350, copper: 'YJV-3×300+1×150', aluminum: 'YJLV-2×(3×185+1×95)', distance: '≤60m' },
+      { maxPower: 400, copper: 'YJV-3×300+1×150', aluminum: 'YJLV-2×(3×185+1×95)', distance: '≤60m' }
+    ];
+    let cableRules55 = JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_55));
+    let cableRulesDefault = JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_DEFAULT));
+
+    const TIER_CONFIG = { step: 5, extra55: 5, extraDefault: 0 };
+
+    const PROVINCE_DEFAULT_RATIO = {
+      '北京市': 1.10, '天津市': 1.10, '河北省': 1.10, '山西省': 1.15,
+      '内蒙古自治区': 1.20, '辽宁省': 1.10, '吉林省': 1.10, '黑龙江省': 1.10,
+      '上海市': 1.05, '江苏省': 1.05, '浙江省': 1.05, '安徽省': 1.10,
+      '福建省': 1.05, '江西省': 1.10, '河南省': 1.10, '湖北省': 1.10,
+      '湖南省': 1.10, '广东省': 1.05, '广西壮族自治区': 1.10, '海南省': 1.05,
+      '重庆市': 1.10, '四川省': 1.10, '贵州省': 1.15, '云南省': 1.20,
+      '西藏自治区': 1.20, '陕西省': 1.15, '甘肃省': 1.20, '青海省': 1.20,
+      '宁夏回族自治区': 1.20, '新疆维吾尔自治区': 1.20
+    };
+    const GLOBAL_DEFAULT_RATIO = 1.10;
+
+    const SAMPLE_RATIO_TABLE = [
+      ['北京市','北京市','东城区',null],['北京市','北京市','朝阳区',null],['北京市','北京市','海淀区',null],
+      ['天津市','天津市','和平区',null],['天津市','天津市','河西区',null],
+      ['河北省','石家庄市','全市',null],['河北省','唐山市','全市',null],
+      ['山西省','太原市','全市',null],['山西省','大同市','全市',null],
+      ['内蒙古自治区','呼和浩特市','全市',null],['内蒙古自治区','包头市','全市',null],
+      ['辽宁省','沈阳市','全市',null],['辽宁省','大连市','全市',null],
+      ['吉林省','长春市','全市',null],['吉林省','吉林市','全市',null],
+      ['黑龙江省','哈尔滨市','全市',null],['黑龙江省','齐齐哈尔市','全市',null],
+      ['上海市','上海市','黄浦区',null],['上海市','上海市','浦东新区',null],
+      ['江苏省','南京市','全市',null],['江苏省','苏州市','全市',null],
+      ['浙江省','杭州市','全市',null],['浙江省','宁波市','全市',null],
+      ['安徽省','合肥市','全市',null],['安徽省','芜湖市','全市',null],
+      ['福建省','福州市','全市',null],['福建省','厦门市','全市',null],
+      ['江西省','南昌市','全市',null],['江西省','赣州市','全市',null],
+      ['河南省','郑州市','全市',null],['河南省','洛阳市','全市',null],
+      ['湖北省','武汉市','全市',null],['湖北省','宜昌市','全市',null],
+      ['湖南省','长沙市','全市',null],['湖南省','株洲市','全市',null],
+      ['广东省','广州市','全市',null],['广东省','深圳市','全市',null],
+      ['广西壮族自治区','南宁市','全市',null],['广西壮族自治区','柳州市','全市',null],
+      ['海南省','海口市','全市',null],['海南省','三亚市','全市',null],
+      ['重庆市','重庆市','渝中区',null],['重庆市','重庆市','江北区',null],
+      ['四川省','成都市','全市',null],['四川省','绵阳市','全市',null],
+      ['贵州省','贵阳市','全市',null],['贵州省','遵义市','全市',null],
+      ['云南省','昆明市','全市',null],['云南省','大理州','全州',null],
+      ['西藏自治区','拉萨市','全市',null],
+      ['陕西省','西安市','全市',1.10],['陕西省','宝鸡市','全市',null],
+      ['甘肃省','兰州市','全市',null],['甘肃省','天水市','全市',1.15],
+      ['青海省','西宁市','全市',null],
+      ['宁夏回族自治区','银川市','全市',null],['宁夏回族自治区','中卫市','全市',null],
+      ['新疆维吾尔自治区','乌鲁木齐市','全市',null],['新疆维吾尔自治区','昌吉州','全州',null]
+    ];
+
+    const RATIO_TABLE = [];
+    const STORAGE_KEY = 'inverter_ratio_table_v18';
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          table: RATIO_TABLE, provinceDefaults: PROVINCE_DEFAULT_RATIO,
+          panelPowerOptions, inverterPowers55, inverterPowers50,
+          inverterPowersClass3, inverterPowersClass4,
+          base55Provinces: [...base55Provinces],
+          class3Provinces: [...class3Provinces],
+          class4Provinces: [...class4Provinces],
+          investors, provinceInvestorMap,
+          meterBoxRules55, meterBoxRulesDefault, cableRules55, cableRulesDefault
+        }));
+      } catch (e) { console.warn('localStorage 保存失败', e); }
+    }
+    function loadFromLocalStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || typeof data !== 'object') return null;
+        return data;
+      } catch (e) { return null; }
+    }
+    function clearLocalStorage() { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+
+    function buildProvinceConfig(table = RATIO_TABLE, provinceDefaults = {}) {
+      const config = {};
+      table.forEach(([prov, city, dist, ratio]) => {
+        if (!prov || !city || !dist) return;
+        if (!config[prov]) {
+          const isClass1 = base55Provinces.has(prov);
+          const isClass3 = !isClass1 && class3Provinces.has(prov);
+          const isClass4 = !isClass1 && !isClass3 && class4Provinces.has(prov);
+          let standardPowers;
+          let provinceClass;
+          if (isClass1) { standardPowers = [...inverterPowers55]; provinceClass = 'class1'; }
+          else if (isClass3) { standardPowers = [...inverterPowersClass3]; provinceClass = 'class3'; }
+          else if (isClass4) { standardPowers = [...inverterPowersClass4]; provinceClass = 'class4'; }
+          else { standardPowers = [...inverterPowers50]; provinceClass = 'default'; }
+
+          config[prov] = {
+            unitBasePower: isClass1 ? 55 : 50,
+            standardPowers,
+            is55Base: isClass1,
+            provinceClass,
+            cities: {}
+          };
+        }
+        if (!config[prov].cities[city]) config[prov].cities[city] = {};
+        let finalRatio;
+        if (ratio !== null && ratio !== undefined && !isNaN(ratio)) finalRatio = Number(ratio);
+        else if (provinceDefaults && provinceDefaults[prov] !== undefined) finalRatio = provinceDefaults[prov];
+        else if (PROVINCE_DEFAULT_RATIO[prov] !== undefined) finalRatio = PROVINCE_DEFAULT_RATIO[prov];
+        else finalRatio = GLOBAL_DEFAULT_RATIO;
+        config[prov].cities[city][dist] = Math.min(1.2, Math.max(1.0, finalRatio));
+      });
+      return config;
+    }
+
+    let LOCATION_CONFIG = {};
+    const DC_POWER_LIMIT = 400;
+
+    // DOM
+    const provinceSelect = document.getElementById('provinceSelect');
+    const citySelect = document.getElementById('citySelect');
+    const districtSelect = document.getElementById('districtSelect');
+    const cityHint = document.getElementById('cityHint');
+    const districtHint = document.getElementById('districtHint');
+    const locationInfo = document.getElementById('locationInfo');
+    const investorBanner = document.getElementById('investorBanner');
+    const investorBannerName = document.getElementById('investorBannerName');
+    const investorToggleSwitch = document.getElementById('investorToggleSwitch');
+
+    const panelPowerInput = document.getElementById('panelPower');
+    const panelPowerCustomWrapper = document.getElementById('panelPowerCustomWrapper');
+    const panelPowerCustomInput = document.getElementById('panelPowerCustom');
+    const panelPowerHint = document.getElementById('panelPowerHint');
+    const panelCountInput = document.getElementById('panelCount');
+    const panelCountWrapper = document.getElementById('panelCountWrapper');
+    const panelCountHint = document.getElementById('panelCountHint');
+    const dcAcRatioInput = document.getElementById('dcAcRatio');
+    const ratioHint = document.getElementById('ratioHint');
+
+    const mainResultCard = document.getElementById('mainResultCard');
+    const mainCardIcon = document.getElementById('mainCardIcon');
+    const resultCardTitle = document.getElementById('resultCardTitle');
+    const investorTitleBadge = document.getElementById('investorTitleBadge');
+    const comboLabel = document.getElementById('comboLabel');
+
+    const displayDcTotal = document.getElementById('displayDcTotal');
+    const displayAcRequired = document.getElementById('displayAcRequired');
+    const displayInverterCombo = document.getElementById('displayInverterCombo');
+    const displayActualRatio = document.getElementById('displayActualRatio');
+    const summaryNote = document.getElementById('summaryNote');
+    const summaryText = document.getElementById('summaryText');
+    const summaryIcon = document.getElementById('summaryIcon');
+    const ratioCheckBadge = document.getElementById('ratioCheckBadge');
+    const ruleProvinceName = document.getElementById('ruleProvinceName');
+    const ruleBasePower = document.getElementById('ruleBasePower');
+    const ruleBadges = document.getElementById('ruleBadges');
+    const meterBoxRow = document.getElementById('meterBoxRow');
+    const meterBoxText = document.getElementById('meterBoxText');
+
+    const investorBadgesWrap = document.getElementById('investorBadgesWrap');
+    const investorPowerBadges = document.getElementById('investorPowerBadges');
+    const investorBadgeTitle = document.getElementById('investorBadgeTitle');
+
+    const cableContent = document.getElementById('cableContent');
+    const cableNote = document.getElementById('cableNote');
+
+    const excelFileInput = document.getElementById('excelFileInput');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const loadSampleBtn = document.getElementById('loadSampleBtn');
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const tableStatsHint = document.getElementById('tableStatsHint');
+    const emptyBanner = document.getElementById('emptyBanner');
+    const resetBtn = document.getElementById('resetDefaults');
+
+    const panelPowerTags = document.getElementById('panelPowerTags');
+    const invPowers55Tags = document.getElementById('invPowers55Tags');
+    const invPowers50Tags = document.getElementById('invPowers50Tags');
+    const invPowersClass3Tags = document.getElementById('invPowersClass3Tags');
+    const invPowersClass4Tags = document.getElementById('invPowersClass4Tags');
+    const panelPowerNew = document.getElementById('panelPowerNew');
+    const invPower55New = document.getElementById('invPower55New');
+    const invPower50New = document.getElementById('invPower50New');
+    const invPowerClass3New = document.getElementById('invPowerClass3New');
+    const invPowerClass4New = document.getElementById('invPowerClass4New');
+    const panelPowerAddBtn = document.getElementById('panelPowerAddBtn');
+    const invPower55AddBtn = document.getElementById('invPower55AddBtn');
+    const invPower50AddBtn = document.getElementById('invPower50AddBtn');
+    const invPowerClass3AddBtn = document.getElementById('invPowerClass3AddBtn');
+    const invPowerClass4AddBtn = document.getElementById('invPowerClass4AddBtn');
+
+    const base55Tags = document.getElementById('base55Tags');
+    const base55ProvinceSelect = document.getElementById('base55ProvinceSelect');
+    const base55AddBtn = document.getElementById('base55AddBtn');
+    const base55ResetBtn = document.getElementById('base55ResetBtn');
+
+    const class3Tags = document.getElementById('class3Tags');
+    const class3ProvinceSelect = document.getElementById('class3ProvinceSelect');
+    const class3AddBtn = document.getElementById('class3AddBtn');
+    const class3ResetBtn = document.getElementById('class3ResetBtn');
+
+    const class4Tags = document.getElementById('class4Tags');
+    const class4ProvinceSelect = document.getElementById('class4ProvinceSelect');
+    const class4AddBtn = document.getElementById('class4AddBtn');
+    const class4ResetBtn = document.getElementById('class4ResetBtn');
+
+    const investorsList = document.getElementById('investorsList');
+    const addInvestorBtn = document.getElementById('addInvestorBtn');
+    const investorsResetBtn = document.getElementById('investorsResetBtn');
+    const provinceInvestorTags = document.getElementById('provinceInvestorTags');
+    const bindProvinceSelect = document.getElementById('bindProvinceSelect');
+    const bindInvestorSelect = document.getElementById('bindInvestorSelect');
+    const bindProvinceAddBtn = document.getElementById('bindProvinceAddBtn');
+
+    const meterBoxResetAllBtn = document.getElementById('meterBoxResetAllBtn');
+    const cableResetAllBtn = document.getElementById('cableResetAllBtn');
+    const meterBoxCount55 = document.getElementById('meterBoxCount55');
+    const meterBoxCountDefault = document.getElementById('meterBoxCountDefault');
+    const cableCount55 = document.getElementById('cableCount55');
+    const cableCountDefault = document.getElementById('cableCountDefault');
+
+    let currentProvince = '';
+    let currentCity = '';
+    let currentDistrict = '';
+    let currentRatioLimit = 1.10;
+    let currentUnitBasePower = 50;
+    let currentIs55Base = false;
+    let currentInvestorId = null;
+    let userUseInvestor = true;
+
+    const defaults = {
+      panelPower: DEFAULT_PANEL_POWER_OPTIONS[0],
+      panelCount: 500,
+      dcAcRatio: 1.10
+    };
+
+    const INV_EFF = 0.97;
+    const LINE_LOSS = 0.02;
+    const TEMP_DERATE = 0.95;
+    const MAX_UNITS = 30;
+
+    // ============================================================
+    // 渲染
+    // ============================================================
+    function renderPanelPowerSelect() {
+      const currentVal = panelPowerInput.value;
+      panelPowerInput.innerHTML = '';
+      panelPowerOptions.forEach(w => {
+        const option = document.createElement('option');
+        option.value = String(w); option.textContent = w + ' W';
+        panelPowerInput.appendChild(option);
+      });
+      const customOpt = document.createElement('option');
+      customOpt.value = 'custom'; customOpt.textContent = '✎ 自定义（手动输入）...';
+      panelPowerInput.appendChild(customOpt);
+      if (currentVal === 'custom') panelPowerInput.value = 'custom';
+      else if (panelPowerOptions.map(String).includes(currentVal)) panelPowerInput.value = currentVal;
+      else if (panelPowerOptions.length > 0) panelPowerInput.value = String(panelPowerOptions[0]);
+      syncPanelPowerUI();
+    }
+
+    function getPanelPower() {
+      if (panelPowerInput.value === 'custom') {
+        const v = parseFloat(panelPowerCustomInput.value);
+        if (isNaN(v) || v <= 0) return null;
+        return Math.min(PANEL_POWER_MAX, Math.max(PANEL_POWER_MIN, v));
+      }
+      const v = parseFloat(panelPowerInput.value);
+      return isNaN(v) ? null : v;
+    }
+
+    function syncPanelPowerUI() {
+      const isCustom = (panelPowerInput.value === 'custom');
+      panelPowerCustomWrapper.style.display = isCustom ? 'flex' : 'none';
+      if (isCustom) {
+        panelPowerHint.innerHTML = `<i class="fas fa-edit" style="color:#2c7fb8;"></i> 手动输入组件功率（${PANEL_POWER_MIN}W ~ ${PANEL_POWER_MAX}W），自动参与计算`;
+      } else {
+        panelPowerHint.textContent = `峰值瓦特 (Wp)，可从下拉选择，也可选「自定义」手动输入（${PANEL_POWER_MIN}W ~ ${PANEL_POWER_MAX}W）`;
+      }
+    }
+
+    function renderTierTags() {
+      renderTagList(panelPowerTags, panelPowerOptions, 'panel', 'W', []);
+      renderTagList(invPowers55Tags, inverterPowers55, 'inv55', 'kW', MULTI_UNIT_EXCLUDED_POWERS);
+      renderTagList(invPowers50Tags, inverterPowers50, 'inv50', 'kW', MULTI_UNIT_EXCLUDED_POWERS);
+      renderTagList(invPowersClass3Tags, inverterPowersClass3, 'invClass3', 'kW', MULTI_UNIT_EXCLUDED_POWERS);
+      renderTagList(invPowersClass4Tags, inverterPowersClass4, 'invClass4', 'kW', MULTI_UNIT_EXCLUDED_POWERS);
+      renderBase55Tags();
+      renderClass3Tags();
+      renderClass4Tags();
+      renderInvestors();
+      updateRuleCounts();
+    }
+
+    function updateRuleCounts() {
+      meterBoxCount55.textContent = meterBoxRules55.length;
+      meterBoxCountDefault.textContent = meterBoxRulesDefault.length;
+      cableCount55.textContent = cableRules55.length;
+      cableCountDefault.textContent = cableRulesDefault.length;
+    }
+
+    function renderTagList(container, arr, target, unit, excluded = []) {
+      container.innerHTML = arr.map(v => {
+        const isExcluded = excluded.includes(v);
+        return `<span class="tier-tag ${isExcluded ? 'excluded' : ''}" title="${isExcluded ? '多台组合时排除此档位' : ''}">${v}${unit}<button data-target="${target}" data-value="${v}" title="删除">×</button></span>`;
+      }).join('');
+      container.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = btn.dataset.target; const v = Number(btn.dataset.value); removeTier(t, v);
+        });
+      });
+    }
+
+    function getAllProvinces() { return [...new Set(RATIO_TABLE.map(r => r[0]))].sort(); }
+
+    function renderBase55Tags() {
+      base55Tags.innerHTML = [...base55Provinces].map(p => `<span class="tier-tag province">${p}<button data-province="${p}" title="删除">×</button></span>`).join('');
+      base55Tags.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => removeBase55Province(btn.dataset.province));
+      });
+      refreshBase55ProvinceSelect();
+    }
+    function refreshBase55ProvinceSelect() {
+      if (!base55ProvinceSelect) return;
+      const available = getAllProvinces().filter(p => !base55Provinces.has(p));
+      base55ProvinceSelect.innerHTML = '<option value="">-- 选择省份 --</option>' + available.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function renderClass3Tags() {
+      class3Tags.innerHTML = [...class3Provinces].map(p => `<span class="tier-tag province-class3">${p}<span class="class3-badge">仅档位不同</span><button data-province="${p}" title="删除">×</button></span>`).join('');
+      class3Tags.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => removeClass3Province(btn.dataset.province));
+      });
+      refreshClass3ProvinceSelect();
+    }
+    function refreshClass3ProvinceSelect() {
+      if (!class3ProvinceSelect) return;
+      const available = getAllProvinces().filter(p => !class3Provinces.has(p));
+      class3ProvinceSelect.innerHTML = '<option value="">-- 选择省份 --</option>' + available.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function renderClass4Tags() {
+      class4Tags.innerHTML = [...class4Provinces].map(p => `<span class="tier-tag province-class4">${p}<span class="class4-badge">仅档位不同(4)</span><button data-province="${p}" title="删除">×</button></span>`).join('');
+      class4Tags.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => removeClass4Province(btn.dataset.province));
+      });
+      refreshClass4ProvinceSelect();
+    }
+    function refreshClass4ProvinceSelect() {
+      if (!class4ProvinceSelect) return;
+      const available = getAllProvinces().filter(p => !class4Provinces.has(p));
+      class4ProvinceSelect.innerHTML = '<option value="">-- 选择省份 --</option>' + available.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function renderInvestors() {
+      investorsList.innerHTML = investors.map(inv => `
+        <div class="investor-block" data-investor-id="${inv.id}">
+          <div class="investor-block-header">
+            <i class="fas fa-handshake" style="color: #e8a33d;"></i>
+            <input type="text" class="inv-name-input" data-investor-id="${inv.id}" value="${inv.name}" placeholder="资方名称">
+            <button class="inv-del-btn" data-investor-id="${inv.id}" title="删除资方"><i class="fas fa-trash-alt"></i></button>
+          </div>
+          <div class="tier-tags">
+            ${inv.powers.map(v => `<span class="tier-tag">${v}kW<button data-investor-id="${inv.id}" data-power="${v}" title="删除">×</button></span>`).join('')}
+          </div>
+          <div class="tier-add-row">
+            <input type="number" min="1" max="200" step="1" class="inv-power-new" data-investor-id="${inv.id}" placeholder="如 60（kW）">
+            <button class="inv-power-add-btn" data-investor-id="${inv.id}"><i class="fas fa-plus"></i> 添加</button>
+          </div>
+        </div>
+      `).join('');
+
+      investorsList.querySelectorAll('.inv-name-input').forEach(input => {
+        input.addEventListener('change', () => {
+          const id = input.dataset.investorId;
+          const inv = investors.find(i => i.id === id);
+          if (inv) {
+            const newName = input.value.trim() || inv.name;
+            inv.name = newName; input.value = newName;
+            saveToLocalStorage(); renderProvinceInvestorTags();
+            refreshBindInvestorSelect(); updateSelection();
+          }
+        });
+      });
+      investorsList.querySelectorAll('.inv-del-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.investorId;
+          if (investors.length <= 1) { alert('至少保留一个资方'); return; }
+          const inv = investors.find(i => i.id === id);
+          if (!confirm(`确定删除资方「${inv ? inv.name : id}」？已绑定省份将解除绑定。`)) return;
+          investors = investors.filter(i => i.id !== id);
+          Object.keys(provinceInvestorMap).forEach(prov => {
+            if (provinceInvestorMap[prov] === id) delete provinceInvestorMap[prov];
+          });
+          saveToLocalStorage(); renderInvestors(); updateSelection();
+        });
+      });
+      investorsList.querySelectorAll('.tier-tag button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.investorId; const power = Number(btn.dataset.power);
+          const inv = investors.find(i => i.id === id);
+          if (!inv) return;
+          if (inv.powers.length <= 1) { alert('每个资方至少保留一个功率档位'); return; }
+          inv.powers = inv.powers.filter(v => v !== power);
+          saveToLocalStorage(); renderInvestors(); updateSelection();
+        });
+      });
+      investorsList.querySelectorAll('.inv-power-add-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.investorId;
+          const input = investorsList.querySelector(`.inv-power-new[data-investor-id="${id}"]`);
+          const v = parseFloat(input.value);
+          if (isNaN(v) || v < 1 || v > 200) { alert('请输入 1 ~ 200 之间的功率值'); return; }
+          const inv = investors.find(i => i.id === id);
+          if (!inv) return;
+          if (inv.powers.includes(v)) { alert('该功率档位已存在'); return; }
+          inv.powers.push(v); inv.powers.sort((a, b) => a - b);
+          input.value = '';
+          saveToLocalStorage(); renderInvestors(); updateSelection();
+        });
+      });
+      investorsList.querySelectorAll('.inv-power-new').forEach(input => {
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const id = input.dataset.investorId;
+            const btn = investorsList.querySelector(`.inv-power-add-btn[data-investor-id="${id}"]`);
+            if (btn) btn.click();
+          }
+        });
+      });
+      renderProvinceInvestorTags();
+      refreshBindProvinceSelect();
+      refreshBindInvestorSelect();
+    }
+
+    function renderProvinceInvestorTags() {
+      const entries = Object.entries(provinceInvestorMap);
+      if (entries.length === 0) {
+        provinceInvestorTags.innerHTML = '<span style="color:#5f7d95; font-size:0.78rem; font-style:italic;">暂无省份绑定资方</span>';
+        return;
+      }
+      provinceInvestorTags.innerHTML = entries.map(([prov, invId]) => {
+        const inv = investors.find(i => i.id === invId);
+        const invName = inv ? inv.name : '(已删除)';
+        return `<span class="province-bind-tag">${prov} <span class="arrow">→</span> <span class="inv-name">${invName}</span><button data-province="${prov}" title="解除绑定">×</button></span>`;
+      }).join('');
+      provinceInvestorTags.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          delete provinceInvestorMap[btn.dataset.province];
+          saveToLocalStorage(); renderInvestors(); updateSelection();
+        });
+      });
+    }
+
+    function refreshBindProvinceSelect() {
+      const available = getAllProvinces().filter(p => !provinceInvestorMap[p]);
+      bindProvinceSelect.innerHTML = '<option value="">-- 选择省份 --</option>' + available.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+    function refreshBindInvestorSelect() {
+      bindInvestorSelect.innerHTML = '<option value="">-- 选择资方 --</option>' + investors.map(inv => `<option value="${inv.id}">${inv.name}</option>`).join('');
+    }
+
+    function addInvestor() {
+      const newId = 'inv_' + Date.now();
+      const newIndex = investors.length + 1;
+      investors.push({ id: newId, name: `资方${String.fromCharCode(64 + newIndex)}`, powers: [25, 30, 40, 50, 60, 80, 100] });
+      saveToLocalStorage(); renderInvestors(); updateSelection();
+    }
+    function resetInvestors() {
+      if (!confirm('确定恢复默认资方列表和省份绑定？')) return;
+      investors = JSON.parse(JSON.stringify(DEFAULT_INVESTORS));
+      provinceInvestorMap = { ...DEFAULT_PROVINCE_INVESTOR_MAP };
+      saveToLocalStorage(); renderInvestors(); updateSelection();
+    }
+    function addProvinceInvestor(prov, invId) {
+      if (!prov || !invId) { alert('请选择省份和资方'); return false; }
+      provinceInvestorMap[prov] = invId;
+      saveToLocalStorage(); renderInvestors(); updateSelection();
+      return true;
+    }
+
+    function addBase55Province(prov) {
+      if (!prov) { alert('请先选择省份'); return false; }
+      if (base55Provinces.has(prov)) { alert('该省份已在列表中'); return false; }
+      class3Provinces.delete(prov);
+      class4Provinces.delete(prov);
+      base55Provinces.add(prov);
+      renderBase55Tags(); renderClass3Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+      return true;
+    }
+    function removeBase55Province(prov) {
+      if (base55Provinces.size <= 1) { alert('至少保留一个 55kW 基数省份'); return; }
+      base55Provinces.delete(prov);
+      renderBase55Tags(); renderClass3Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+    function resetBase55Provinces() {
+      if (!confirm('确定恢复默认？')) return;
+      base55Provinces = new Set(DEFAULT_BASE_55_PROVINCES);
+      DEFAULT_BASE_55_PROVINCES.forEach(p => { class3Provinces.delete(p); class4Provinces.delete(p); });
+      renderBase55Tags(); renderClass3Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+
+    function addClass3Province(prov) {
+      if (!prov) { alert('请先选择省份'); return false; }
+      if (class3Provinces.has(prov)) { alert('该省份已在第三类列表中'); return false; }
+      base55Provinces.delete(prov);
+      class4Provinces.delete(prov);
+      class3Provinces.add(prov);
+      renderClass3Tags(); renderBase55Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+      return true;
+    }
+    function removeClass3Province(prov) {
+      class3Provinces.delete(prov);
+      renderClass3Tags(); renderBase55Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+    function resetClass3Provinces() {
+      if (!confirm('确定恢复默认？第三类省份列表将清空。')) return;
+      class3Provinces = new Set([]);
+      renderClass3Tags(); renderBase55Tags(); renderClass4Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+
+    function addClass4Province(prov) {
+      if (!prov) { alert('请先选择省份'); return false; }
+      if (class4Provinces.has(prov)) { alert('该省份已在第四类列表中'); return false; }
+      base55Provinces.delete(prov);
+      class3Provinces.delete(prov);
+      class4Provinces.add(prov);
+      renderClass4Tags(); renderBase55Tags(); renderClass3Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+      return true;
+    }
+    function removeClass4Province(prov) {
+      class4Provinces.delete(prov);
+      renderClass4Tags(); renderBase55Tags(); renderClass3Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+    function resetClass4Provinces() {
+      if (!confirm('确定恢复默认？第四类省份列表将清空。')) return;
+      class4Provinces = new Set([]);
+      renderClass4Tags(); renderBase55Tags(); renderClass3Tags();
+      saveToLocalStorage(); LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+
+    function addTier(target, value) {
+      let success = false;
+      if (target === 'panel') {
+        if (value < PANEL_POWER_MIN || value > PANEL_POWER_MAX) { alert(`组件功率需在 ${PANEL_POWER_MIN} ~ ${PANEL_POWER_MAX} W 之间`); return false; }
+        if (panelPowerOptions.includes(value)) { alert('已存在'); return false; }
+        panelPowerOptions.push(value); panelPowerOptions.sort((a, b) => a - b);
+        renderPanelPowerSelect(); success = true;
+      } else if (target === 'inv55') {
+        if (value < 1 || value > 200) { alert('1~200'); return false; }
+        if (inverterPowers55.includes(value)) { alert('已存在'); return false; }
+        inverterPowers55.push(value); inverterPowers55.sort((a, b) => a - b); success = true;
+      } else if (target === 'inv50') {
+        if (value < 1 || value > 200) { alert('1~200'); return false; }
+        if (inverterPowers50.includes(value)) { alert('已存在'); return false; }
+        inverterPowers50.push(value); inverterPowers50.sort((a, b) => a - b); success = true;
+      } else if (target === 'invClass3') {
+        if (value < 1 || value > 200) { alert('1~200'); return false; }
+        if (inverterPowersClass3.includes(value)) { alert('已存在'); return false; }
+        inverterPowersClass3.push(value); inverterPowersClass3.sort((a, b) => a - b); success = true;
+      } else if (target === 'invClass4') {
+        if (value < 1 || value > 200) { alert('1~200'); return false; }
+        if (inverterPowersClass4.includes(value)) { alert('已存在'); return false; }
+        inverterPowersClass4.push(value); inverterPowersClass4.sort((a, b) => a - b); success = true;
+      }
+      if (success) {
+        renderTierTags(); saveToLocalStorage();
+        LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+      }
+      return success;
+    }
+
+    function removeTier(target, value) {
+      if (target === 'panel') {
+        if (panelPowerOptions.length <= 1) { alert('至少保留一个'); return; }
+        panelPowerOptions = panelPowerOptions.filter(v => v !== value); renderPanelPowerSelect();
+      } else if (target === 'inv55') {
+        if (inverterPowers55.length <= 1) { alert('至少保留一个'); return; }
+        inverterPowers55 = inverterPowers55.filter(v => v !== value);
+      } else if (target === 'inv50') {
+        if (inverterPowers50.length <= 1) { alert('至少保留一个'); return; }
+        inverterPowers50 = inverterPowers50.filter(v => v !== value);
+      } else if (target === 'invClass3') {
+        if (inverterPowersClass3.length <= 1) { alert('至少保留一个'); return; }
+        inverterPowersClass3 = inverterPowersClass3.filter(v => v !== value);
+      } else if (target === 'invClass4') {
+        if (inverterPowersClass4.length <= 1) { alert('至少保留一个'); return; }
+        inverterPowersClass4 = inverterPowersClass4.filter(v => v !== value);
+      }
+      renderTierTags(); saveToLocalStorage();
+      LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+
+    function resetTier(target) {
+      if (!confirm('确定恢复该档位为默认值？')) return;
+      if (target === 'panel') { panelPowerOptions = [...DEFAULT_PANEL_POWER_OPTIONS]; renderPanelPowerSelect(); }
+      else if (target === 'inv55') { inverterPowers55 = [...DEFAULT_INVERTER_POWERS_55]; }
+      else if (target === 'inv50') { inverterPowers50 = [...DEFAULT_INVERTER_POWERS_50]; }
+      else if (target === 'invClass3') { inverterPowersClass3 = [...DEFAULT_INVERTER_POWERS_CLASS3]; }
+      else if (target === 'invClass4') { inverterPowersClass4 = [...DEFAULT_INVERTER_POWERS_CLASS4]; }
+      renderTierTags(); saveToLocalStorage();
+      LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, {}); updateSelection();
+    }
+
+    function resetMeterBoxRules() {
+      if (!confirm('确定恢复表箱规则为默认值？')) return;
+      meterBoxRules55 = JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_55));
+      meterBoxRulesDefault = JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_DEFAULT));
+      updateRuleCounts(); saveToLocalStorage(); updateSelection();
+    }
+    function resetCableRules() {
+      if (!confirm('确定恢复交流电缆规则为默认值？')) return;
+      cableRules55 = JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_55));
+      cableRulesDefault = JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_DEFAULT));
+      updateRuleCounts(); saveToLocalStorage(); updateSelection();
+    }
+
+    function getMeterBoxSpec(totalPower, is55Base) {
+      const rules = is55Base ? meterBoxRules55 : meterBoxRulesDefault;
+      for (const rule of rules) { if (totalPower <= rule.maxPower + 1e-9) return rule.spec; }
+      return '超出规则范围';
+    }
+    function getCableSpec(power, is55Base) {
+      const rules = is55Base ? cableRules55 : cableRulesDefault;
+      for (const rule of rules) { if (power <= rule.maxPower + 1e-9) return rule; }
+      return null;
+    }
+
+    // ★ 交流电缆：多台时，出线电缆仅展示铜电缆
+    function renderCableSection(totalAcCapacity, comboList, is55Base) {
+      if (RATIO_TABLE.length === 0 || !currentProvince || !currentCity || !currentDistrict) {
+        cableContent.innerHTML = `<table class="cable-table"><thead><tr><th style="width:40%;">项目</th><th>规格 / 要求</th></tr></thead><tbody>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>交流铜电缆</span></td><td class="cable-value copper">—</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>铝合金电缆</span></td><td class="cable-value aluminum">—</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-road"></i>距离要求</span></td><td class="cable-value distance">—</td></tr>
+        </tbody></table>`;
+        cableNote.innerHTML = '<i class="fas fa-info-circle"></i><span>请先选择项目位置以匹配交流电缆</span>';
+        return;
+      }
+      const isMulti = comboList.length > 1 || (comboList.length === 1 && comboList[0].count > 1);
+      const mainCable = getCableSpec(totalAcCapacity, is55Base);
+      if (!mainCable) {
+        cableContent.innerHTML = `<table class="cable-table"><thead><tr><th style="width:40%;">项目</th><th>规格 / 要求</th></tr></thead><tbody>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>交流铜电缆</span></td><td class="cable-value copper">超出规则范围</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>铝合金电缆</span></td><td class="cable-value aluminum">超出规则范围</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-road"></i>距离要求</span></td><td class="cable-value distance">—</td></tr>
+        </tbody></table>`;
+        cableNote.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#d96b30;"></i><span style="color:#b34a1c;">逆变器总功率超出电缆规则范围。</span>';
+        return;
+      }
+      let html = '';
+      if (isMulti) {
+        // 主电缆：铜 + 铝 + 距离
+        html += `<div class="cable-section-title"><i class="fas fa-project-diagram"></i>主电缆（按逆变器总功率 ${totalAcCapacity.toFixed(1)} kW）</div>`;
+        html += `<table class="cable-table"><thead><tr><th style="width:40%;">项目</th><th>规格 / 要求</th></tr></thead><tbody>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>交流铜电缆</span></td><td class="cable-value copper">${mainCable.copper}</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>铝合金电缆</span></td><td class="cable-value aluminum">${mainCable.aluminum}</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-road"></i>距离要求</span></td><td class="cable-value distance">${mainCable.distance}</td></tr>
+        </tbody></table>`;
+        // ★ 出线电缆：仅铜电缆
+        html += `<div class="cable-section-title sub" style="margin-top:16px;"><i class="fas fa-share-alt"></i>出线电缆（按单台功率，每台一致）</div>`;
+        html += `<table class="cable-table"><thead><tr><th style="width:40%;">单台功率 / 台数</th><th>铜电缆规格</th></tr></thead><tbody>`;
+        comboList.forEach(c => {
+          const singleCable = getCableSpec(c.power, is55Base);
+          if (singleCable) {
+            html += `<tr><td><span class="cable-label"><i class="fas fa-microchip"></i>${c.power}kW × ${c.count} 台</span></td>
+              <td><span class="cable-value copper">${singleCable.copper}</span></td></tr>`;
+          } else {
+            html += `<tr><td><span class="cable-label"><i class="fas fa-microchip"></i>${c.power}kW × ${c.count} 台</span></td><td class="cable-value" style="color:#b34a1c;">超出规则范围</td></tr>`;
+          }
+        });
+        html += `</tbody></table>`;
+        cableNote.innerHTML = '<i class="fas fa-info-circle"></i><span>主电缆依据逆变器总功率 <strong>' + totalAcCapacity.toFixed(1) + ' kW</strong> 匹配，出线电缆依据每台逆变器功率匹配（仅铜电缆）。</span>';
+      } else {
+        html += `<table class="cable-table"><thead><tr><th style="width:40%;">项目</th><th>规格 / 要求</th></tr></thead><tbody>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>交流铜电缆</span></td><td class="cable-value copper">${mainCable.copper}</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-bolt"></i>铝合金电缆</span></td><td class="cable-value aluminum">${mainCable.aluminum}</td></tr>
+          <tr><td><span class="cable-label"><i class="fas fa-road"></i>距离要求</span></td><td class="cable-value distance">${mainCable.distance}</td></tr>
+        </tbody></table>`;
+        cableNote.innerHTML = '<i class="fas fa-info-circle"></i><span>依据逆变器功率 <strong>' + totalAcCapacity.toFixed(1) + ' kW</strong> 匹配。</span>';
+      }
+      cableContent.innerHTML = html;
+    }
+
+    function renderUnitRuleBadges() {
+      const base = currentUnitBasePower;
+      ruleProvinceName.textContent = currentProvince || '省份';
+      ruleBasePower.textContent = base;
+      const badges = [];
+      const maxLevel = Math.ceil(DC_POWER_LIMIT / base);
+      let currentUnits = 0;
+      try {
+        const panelW = getPanelPower() || defaults.panelPower;
+        const panelCnt = parseFloat(panelCountInput.value) || defaults.panelCount;
+        const dcTotalPower = (panelW * panelCnt) / 1000;
+        const acRequired = dcTotalPower / currentRatioLimit;
+        currentUnits = calcUnitCount(acRequired);
+      } catch (e) {}
+      for (let level = 1; level <= maxLevel; level++) {
+        let text = level === 1 ? `≤${base}kW → 1台` : `${base * (level - 1)}~${base * level}kW → ${level}台`;
+        const isCurrent = (level === currentUnits);
+        badges.push(`<span class="rule-badge ${isCurrent ? 'current' : ''}">${text}</span>`);
+      }
+      ruleBadges.innerHTML = badges.join('');
+    }
+
+    function updateRuleDisplay() { renderUnitRuleBadges(); }
+
+    function getTierBounds(acRequired, is55Base) {
+      const step = TIER_CONFIG.step;
+      const extra = is55Base ? TIER_CONFIG.extra55 : TIER_CONFIG.extraDefault;
+      const tierValue = Math.ceil((acRequired - 1e-9) / step) * step;
+      return { tierValue, maxAllowed: tierValue + extra };
+    }
+
+    function refreshDropdowns(preserveSelection = true) {
+      const prevProv = preserveSelection ? provinceSelect.value : '';
+      const prevCity = preserveSelection ? citySelect.value : '';
+      const prevDist = preserveSelection ? districtSelect.value : '';
+      provinceSelect.innerHTML = '<option value="">-- 请选择省份 --</option>';
+      const provinces = Object.keys(LOCATION_CONFIG);
+      provinces.forEach(prov => {
+        const option = document.createElement('option');
+        option.value = prov; option.textContent = prov;
+        provinceSelect.appendChild(option);
+      });
+      if (provinces.length === 0) {
+        currentProvince = ''; currentCity = ''; currentDistrict = '';
+        currentRatioLimit = defaults.dcAcRatio; currentUnitBasePower = 50;
+        currentIs55Base = false; currentInvestorId = null;
+        citySelect.innerHTML = '<option value="">-- 无数据 --</option>'; citySelect.disabled = true;
+        districtSelect.innerHTML = '<option value="">-- 无数据 --</option>'; districtSelect.disabled = true;
+        cityHint.textContent = '请先导入 Excel 或加载示例数据';
+        districtHint.textContent = '请先导入 Excel 或加载示例数据';
+        ratioHint.textContent = '请先导入 Excel 或加载示例数据';
+        dcAcRatioInput.value = '1.10';
+        locationInfo.style.display = 'none';
+        investorBanner.style.display = 'none';
+        emptyBanner.classList.remove('hidden');
+        updateRuleDisplay(); updateSelection();
+        return;
+      }
+      emptyBanner.classList.add('hidden');
+      provinceSelect.value = (prevProv && LOCATION_CONFIG[prevProv]) ? prevProv : provinces[0];
+      onProvinceChange(preserveSelection ? prevCity : '', preserveSelection ? prevDist : '');
+    }
+
+    function onProvinceChange(preferredCity = '', preferredDist = '') {
+      const prov = provinceSelect.value;
+      currentProvince = prov;
+      citySelect.innerHTML = '<option value="">-- 请选择市 --</option>';
+      citySelect.disabled = true;
+      districtSelect.innerHTML = '<option value="">-- 请先选择城市 --</option>';
+      districtSelect.disabled = true;
+      locationInfo.style.display = 'none';
+      districtHint.textContent = '选择区县后自动加载该区县绑定的容配比';
+
+      currentInvestorId = provinceInvestorMap[prov] || null;
+      const inv = currentInvestorId ? investors.find(i => i.id === currentInvestorId) : null;
+      if (inv) {
+        investorBanner.style.display = 'flex';
+        investorBannerName.textContent = inv.name;
+        userUseInvestor = true;
+        updateInvestorToggleUI();
+      } else {
+        investorBanner.style.display = 'none';
+        currentInvestorId = null;
+      }
+
+      if (!prov || !LOCATION_CONFIG[prov]) {
+        dcAcRatioInput.value = '1.10';
+        ratioHint.textContent = '选择区县后自动填入该区县绑定的容配比上限';
+        currentRatioLimit = 1.10; currentUnitBasePower = 50; currentIs55Base = false;
+        updateRuleDisplay(); updateSelection(); return;
+      }
+
+      const config = LOCATION_CONFIG[prov];
+      const cities = Object.keys(config.cities);
+      currentUnitBasePower = config.unitBasePower || 50;
+      currentIs55Base = config.is55Base || false;
+      updateRuleDisplay();
+
+      cities.forEach(city => {
+        const option = document.createElement('option');
+        option.value = city; option.textContent = city;
+        citySelect.appendChild(option);
+      });
+      citySelect.disabled = false;
+      cityHint.textContent = `已加载 ${prov} 的 ${cities.length} 个市，请选择项目所在城市`;
+      citySelect.value = (preferredCity && cities.includes(preferredCity)) ? preferredCity : cities[0];
+      onCityChange(preferredDist);
+    }
+
+    function updateInvestorToggleUI() {
+      investorToggleSwitch.querySelectorAll('button').forEach(btn => {
+        const val = btn.dataset.investor === 'yes';
+        if (val === userUseInvestor) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+
+    function onCityChange(preferredDist = '') {
+      const city = citySelect.value;
+      currentCity = city;
+      districtSelect.innerHTML = '<option value="">-- 请选择区县 --</option>';
+      districtSelect.disabled = true;
+      if (!city || !currentProvince || !LOCATION_CONFIG[currentProvince]) {
+        locationInfo.style.display = 'none';
+        dcAcRatioInput.value = '1.10';
+        currentRatioLimit = 1.10;
+        ratioHint.textContent = '选择区县后自动填入该区县绑定的容配比上限';
+        updateSelection(); return;
+      }
+      const cities = LOCATION_CONFIG[currentProvince].cities;
+      if (!cities || !cities[city]) { updateSelection(); return; }
+      const districts = Object.keys(cities[city]);
+      districts.forEach(dist => {
+        const option = document.createElement('option');
+        option.value = dist; option.textContent = dist;
+        districtSelect.appendChild(option);
+      });
+      districtSelect.disabled = false;
+      districtSelect.value = (preferredDist && districts.includes(preferredDist)) ? preferredDist : districts[0];
+      onDistrictChange();
+    }
+
+    function onDistrictChange() {
+      const dist = districtSelect.value;
+      currentDistrict = dist;
+      if (!dist || !currentProvince || !currentCity || !LOCATION_CONFIG[currentProvince]) {
+        locationInfo.style.display = 'none';
+        dcAcRatioInput.value = '1.10';
+        currentRatioLimit = 1.10;
+        ratioHint.textContent = '选择区县后自动填入该区县绑定的容配比上限';
+        updateSelection(); return;
+      }
+      const cities = LOCATION_CONFIG[currentProvince].cities;
+      if (!cities || !cities[currentCity] || cities[currentCity][dist] === undefined) { updateSelection(); return; }
+      const ratioLimit = cities[currentCity][dist];
+      const boundedRatio = Math.min(1.2, Math.max(1.0, ratioLimit));
+      currentRatioLimit = boundedRatio;
+      dcAcRatioInput.value = boundedRatio.toFixed(2);
+      ratioHint.textContent = `【${currentProvince} ${currentCity} ${dist}】容配比上限为 ${boundedRatio.toFixed(2)}`;
+
+      const inv = currentInvestorId ? investors.find(i => i.id === currentInvestorId) : null;
+      let investorTag = '';
+      if (inv) {
+        const tagText = userUseInvestor ? `<strong>${inv.name}</strong>（已启用）` : `<strong>${inv.name}</strong>（未启用）`;
+        const tagClass = userUseInvestor ? 'investor' : '';
+        investorTag = `<div class="location-info-item ${tagClass}"><i class="fas fa-handshake"></i><span>可绑资方：${tagText}</span></div>`;
+      }
+
+      locationInfo.style.display = 'flex';
+      locationInfo.innerHTML = `
+        <div class="location-info-item"><i class="fas fa-map-marker-alt"></i>
+          <span>项目位置：<strong>${currentProvince} · ${currentCity} · ${dist}</strong></span></div>
+        <div class="location-info-item"><i class="fas fa-chart-pie"></i>
+          <span>容配比上限：<strong>${boundedRatio.toFixed(2)}</strong></span></div>
+        ${investorTag}
+      `;
+      districtHint.innerHTML = `<i class="fas fa-info-circle" style="color:#2c7fb8;"></i> 最终容配比必须 ≤ 该区县上限`;
+      updateSelection();
+    }
+
+    function getStandardPowersForProvince() {
+      if (currentProvince && LOCATION_CONFIG[currentProvince]) return LOCATION_CONFIG[currentProvince].standardPowers;
+      return [...inverterPowers50];
+    }
+
+    function calcUnitCount(acRequired) {
+      const base = currentUnitBasePower || 50;
+      if (acRequired <= base) return 1;
+      return Math.ceil(acRequired / base);
+    }
+
+    function findSingleUnit(targetAcPower, standardPowers) {
+      let best = null;
+      for (const p of standardPowers) {
+        if (p >= targetAcPower - 1e-9) { if (best === null || p < best) best = p; }
+      }
+      return best;
+    }
+
+    function findBestCombination(units, standardPowers, minTotal, maxTotal, strictAbove = false) {
+      const maxReq = maxTotal + 1e-9;
+      const dp = Array.from({ length: units + 1 }, () => new Map());
+      dp[0].set(0, null);
+      const sortedPowers = [...standardPowers].sort((a, b) => b - a);
+      for (let i = 0; i < units; i++) {
+        const curLayer = dp[i]; const nextLayer = dp[i + 1];
+        for (const [sum] of curLayer) {
+          for (const p of sortedPowers) {
+            const newSum = sum + p;
+            if (!nextLayer.has(newSum)) nextLayer.set(newSum, { prevSum: sum, power: p });
+          }
+        }
+      }
+      let bestSum = null;
+      for (const sum of dp[units].keys()) {
+        const lowerOk = strictAbove ? (sum > minTotal + 1e-9) : (sum >= minTotal - 1e-9);
+        if (lowerOk && sum <= maxReq) { if (bestSum === null || sum < bestSum) bestSum = sum; }
+      }
+      if (bestSum === null) return null;
+      const powers = []; let curSum = bestSum;
+      for (let i = units; i > 0; i--) {
+        const info = dp[i].get(curSum);
+        if (!info) return null;
+        powers.unshift(info.power); curSum = info.prevSum;
+      }
+      const comboMap = new Map();
+      powers.forEach(p => comboMap.set(p, (comboMap.get(p) || 0) + 1));
+      const comboList = [...comboMap.entries()].map(([power, count]) => ({ power, count })).sort((a, b) => b.power - a.power);
+      return { powers, comboList, units, totalPower: bestSum };
+    }
+
+    function selectInverter(acRequired, dcTotalPower, ratioLimit, standardPowers) {
+      const baseUnits = calcUnitCount(acRequired);
+      const is55Base = currentIs55Base;
+      const { tierValue, maxAllowed } = getTierBounds(acRequired, is55Base);
+      if (baseUnits === 1) {
+        const singlePower = findSingleUnit(acRequired, standardPowers);
+        if (singlePower !== null) {
+          return { powers: [singlePower], comboList: [{ power: singlePower, count: 1 }],
+            units: 1, baseUnits: 1, actualUnits: 1, totalPower: singlePower,
+            tierValue, maxAllowed, usedTieredSearch: true, isSingleUnit: true };
+        }
+      }
+      const multiPowers = standardPowers.filter(p => !MULTI_UNIT_EXCLUDED_POWERS.includes(p));
+      const startUnits = (baseUnits === 1) ? 2 : baseUnits;
+      for (let units = startUnits; units <= MAX_UNITS; units++) {
+        const best = findBestCombination(units, multiPowers, acRequired, maxAllowed, true);
+        if (best) return { ...best, baseUnits, actualUnits: units, tierValue, maxAllowed, usedTieredSearch: true, isSingleUnit: false };
+      }
+      for (let units = startUnits; units <= MAX_UNITS; units++) {
+        const best = findBestCombination(units, multiPowers, acRequired, Infinity, false);
+        if (best) return { ...best, baseUnits, actualUnits: units, tierValue, maxAllowed, usedTieredSearch: false, isSingleUnit: false };
+      }
+      const maxPower = Math.max(...multiPowers);
+      return { powers: Array(baseUnits).fill(maxPower), comboList: [{ power: maxPower, count: baseUnits }],
+        units: baseUnits, baseUnits, actualUnits: baseUnits, totalPower: maxPower * baseUnits,
+        tierValue, maxAllowed, usedTieredSearch: false, isSingleUnit: false };
+    }
+
+    function selectInvestorInverter(acRequired, dcTotalPower, ratioLimit, investorPowers) {
+      const baseUnits = calcUnitCount(acRequired);
+      const is55Base = currentIs55Base;
+      const { tierValue, maxAllowed } = getTierBounds(acRequired, is55Base);
+      if (baseUnits === 1) {
+        const singlePower = findSingleUnit(acRequired, investorPowers);
+        if (singlePower !== null) {
+          const actualRatio = dcTotalPower / singlePower;
+          if (actualRatio <= ratioLimit + 1e-9) {
+            return { powers: [singlePower], comboList: [{ power: singlePower, count: 1 }],
+              units: 1, baseUnits: 1, actualUnits: 1, totalPower: singlePower,
+              tierValue, maxAllowed, mode: 'single', isSingleUnit: true };
+          }
+        }
+      }
+      const startUnits = (baseUnits === 1) ? 2 : baseUnits;
+      const powers5 = investorPowers.filter(p => p % 5 === 0);
+      for (let units = startUnits; units <= MAX_UNITS; units++) {
+        const best = findBestCombination(units, powers5, acRequired, maxAllowed, true);
+        if (best) {
+          const actualRatio = dcTotalPower / best.totalPower;
+          if (actualRatio <= ratioLimit + 1e-9) {
+            return { ...best, baseUnits, actualUnits: units, tierValue, maxAllowed, mode: 'step5', isSingleUnit: false };
+          }
+        }
+      }
+      const powers10 = investorPowers.filter(p => p % 10 === 0);
+      for (let units = startUnits; units <= MAX_UNITS; units++) {
+        const best = findBestCombination(units, powers10, acRequired, maxAllowed, true);
+        if (best) {
+          const actualRatio = dcTotalPower / best.totalPower;
+          if (actualRatio <= ratioLimit + 1e-9) {
+            return { ...best, baseUnits, actualUnits: units, tierValue, maxAllowed, mode: 'step10', isSingleUnit: false };
+          }
+        }
+      }
+      for (let units = startUnits; units <= MAX_UNITS; units++) {
+        const best = findBestCombination(units, powers5, acRequired, Infinity, false);
+        if (best) return { ...best, baseUnits, actualUnits: units, tierValue, maxAllowed, mode: 'step5-fallback', isSingleUnit: false };
+      }
+      return null;
+    }
+
+    function comboToText(comboList) {
+      return comboList.map(c => `${c.power}kW × ${c.count}`).join(' + ');
+    }
+
+    function updateSelection() {
+      let panelW = getPanelPower();
+      let usedFallback = false;
+      if (panelW === null) { panelW = defaults.panelPower; usedFallback = true; }
+      let panelCnt = parseFloat(panelCountInput.value);
+      if (isNaN(panelCnt) || panelCnt <= 0) panelCnt = defaults.panelCount;
+      panelCnt = Math.min(10000, Math.max(1, Math.round(panelCnt)));
+      const dcTotalPower = (panelW * panelCnt) / 1000;
+
+      if (panelPowerInput.value === 'custom') {
+        const raw = parseFloat(panelPowerCustomInput.value);
+        if (isNaN(raw) || raw <= 0) {
+          panelPowerHint.innerHTML = `<i class="fas fa-info-circle" style="color:#2c7fb8;"></i> 请输入组件功率（${PANEL_POWER_MIN}W ~ ${PANEL_POWER_MAX}W），当前按默认值 ${panelW}W 计算`;
+        } else if (raw < PANEL_POWER_MIN || raw > PANEL_POWER_MAX) {
+          panelPowerHint.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#d96b30;"></i> 输入的 ${raw}W 超出范围，已按 ${panelW}W 计算`;
+        } else {
+          panelPowerHint.innerHTML = `<i class="fas fa-edit" style="color:#2c7fb8;"></i> 手动输入组件功率（${PANEL_POWER_MIN}W ~ ${PANEL_POWER_MAX}W），当前 ${panelW}W 参与计算`;
+        }
+      }
+
+      if (dcTotalPower > DC_POWER_LIMIT) {
+        panelCountWrapper.classList.add('warning');
+        panelCountHint.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#d96b30;"></i> 直流侧功率 ${dcTotalPower.toFixed(1)} kW 超过 ${DC_POWER_LIMIT} kW 限制`;
+      } else {
+        panelCountWrapper.classList.remove('warning');
+        panelCountHint.textContent = `直流侧功率 = 组件功率 × 块数，需 ≤ ${DC_POWER_LIMIT} kW`;
+      }
+
+      let ratioLimit = currentRatioLimit;
+      if (isNaN(ratioLimit) || ratioLimit < 1.0) ratioLimit = 1.0;
+      if (ratioLimit > 1.2) ratioLimit = 1.2;
+      const acRequired = dcTotalPower / ratioLimit;
+      const is55Base = currentIs55Base;
+      const currentInvestor = currentInvestorId ? investors.find(i => i.id === currentInvestorId) : null;
+
+      const hasData = RATIO_TABLE.length > 0 && currentProvince && currentCity && currentDistrict;
+      const wantInvestor = currentInvestor && userUseInvestor;
+
+      let finalCombo = null;
+      let isInvestorMode = false;
+      let investorResult = null;
+
+      if (hasData && wantInvestor) {
+        investorResult = selectInvestorInverter(acRequired, dcTotalPower, ratioLimit, currentInvestor.powers);
+        if (investorResult) {
+          isInvestorMode = true;
+          finalCombo = { comboList: investorResult.comboList, units: investorResult.units, totalPower: investorResult.totalPower };
+        }
+      }
+      if (!isInvestorMode) {
+        const standardPowers = getStandardPowersForProvince();
+        const normalCombo = selectInverter(acRequired, dcTotalPower, ratioLimit, standardPowers);
+        finalCombo = { comboList: normalCombo.comboList, units: normalCombo.units, totalPower: normalCombo.totalPower };
+      }
+
+      const comboText = comboToText(finalCombo.comboList);
+      const totalAcCapacity = finalCombo.totalPower;
+      const actualRatio = dcTotalPower / totalAcCapacity;
+      const ratioPass = actualRatio <= ratioLimit + 1e-9;
+      const diff = Math.abs(totalAcCapacity - acRequired);
+      const diffPercent = acRequired > 0 ? (diff / acRequired) * 100 : 0;
+
+      if (isInvestorMode) {
+        mainResultCard.classList.add('investor-mode');
+        mainCardIcon.className = 'fas fa-handshake';
+        resultCardTitle.textContent = '资方电站选型结果';
+        investorTitleBadge.textContent = currentInvestor.name;
+        investorTitleBadge.style.display = 'inline-flex';
+        comboLabel.textContent = '资方逆变器方案';
+      } else {
+        mainResultCard.classList.remove('investor-mode');
+        mainCardIcon.className = 'fas fa-calculator';
+        resultCardTitle.textContent = '选型结果';
+        investorTitleBadge.style.display = 'none';
+        comboLabel.textContent = '最终逆变器方案';
+      }
+
+      displayDcTotal.innerHTML = dcTotalPower.toFixed(2) + ' <small>kW</small>';
+      displayAcRequired.innerHTML = acRequired.toFixed(1) + ' <small>kW</small>';
+      if (dcTotalPower > DC_POWER_LIMIT) displayDcTotal.classList.add('warning-value');
+      else displayDcTotal.classList.remove('warning-value');
+      displayInverterCombo.innerHTML = `<span style="font-size:0.95rem;">${comboText}</span> <small>（共${finalCombo.units}台）</small>`;
+      displayActualRatio.textContent = actualRatio.toFixed(3);
+      if (!ratioPass) displayActualRatio.classList.add('warning-value');
+      else displayActualRatio.classList.remove('warning-value');
+
+      if (ratioPass) { ratioCheckBadge.className = 'ratio-check ok'; ratioCheckBadge.textContent = '符合要求'; }
+      else { ratioCheckBadge.className = 'ratio-check fail'; ratioCheckBadge.textContent = '超出上限'; }
+      renderUnitRuleBadges();
+
+      if (isInvestorMode) {
+        investorBadgesWrap.style.display = 'block';
+        investorBadgeTitle.textContent = `${currentInvestor.name} 专用逆变器功率档位`;
+        investorPowerBadges.innerHTML = [...currentInvestor.powers].sort((a,b)=>a-b).map(v => {
+          let badge = v % 10 === 0 ? '10kW' : (v % 5 === 0 ? '5kW' : '—');
+          return `<span class="rule-badge investor" title="属于 ${badge} 档位">${v}kW</span>`;
+        }).join('');
+      } else {
+        investorBadgesWrap.style.display = 'none';
+      }
+
+      if (!hasData) {
+        meterBoxText.innerHTML = '—';
+        meterBoxRow.classList.remove('highlight', 'investor-highlight');
+      } else {
+        const spec = getMeterBoxSpec(totalAcCapacity, is55Base);
+        const ruleLabel = is55Base ? '55kW 基数省份' : '其他省份';
+        meterBoxText.innerHTML = `<span class="meter-box-spec"><i class="fas fa-box"></i>${spec}</span><span class="sub" style="display:block; margin-top:4px; color:#5f7d95;">依据逆变器总功率 ${totalAcCapacity.toFixed(1)} kW 匹配（${ruleLabel}规则）</span>`;
+        meterBoxRow.classList.add('highlight');
+        meterBoxRow.classList.toggle('investor-highlight', isInvestorMode);
+      }
+
+      renderCableSection(totalAcCapacity, finalCombo.comboList, is55Base);
+
+      let summaryHtml = '';
+      const locationText = (currentProvince && currentCity && currentDistrict)
+        ? `【${currentProvince} · ${currentCity} · ${currentDistrict}】` : '';
+
+      if (RATIO_TABLE.length === 0) {
+        summaryHtml = '当前无省市县数据，请联系管理员导入容配比表。';
+      } else if (!currentProvince || !currentCity || !currentDistrict) {
+        summaryHtml = '请选择省份、城市和区县以加载对应的配置。';
+      } else {
+        const spec = getMeterBoxSpec(totalAcCapacity, is55Base);
+        const mainCable = getCableSpec(totalAcCapacity, is55Base);
+        if (isInvestorMode) {
+          let modeLabel = '';
+          if (investorResult.isSingleUnit) modeLabel = '单台方案（≥ 交流侧计算功率且最接近）';
+          else if (investorResult.mode === 'step5') modeLabel = '多台 · 5kW 一档';
+          else if (investorResult.mode === 'step10') modeLabel = '多台 · 10kW 一档（无法组成 5kW 倍数）';
+          else if (investorResult.mode === 'step5-fallback') modeLabel = '多台 · 5kW 一档（回退）';
+
+          summaryHtml = `${locationText} 按 <strong>${currentInvestor.name}</strong> 要求选型（${modeLabel}）。` +
+            `容配比上限 <strong>${ratioLimit.toFixed(2)}</strong>，` +
+            `直流侧总功率 <strong>${dcTotalPower.toFixed(2)} kW</strong>（组件 ${panelW}W × ${panelCnt} 块），` +
+            `交流侧计算功率 <strong>${acRequired.toFixed(1)} kW</strong>。` +
+            `推荐 <strong>${comboText}</strong>（总交流容量 <strong>${totalAcCapacity.toFixed(1)} kW</strong>，偏差 <strong>${diffPercent.toFixed(2)}%</strong>），` +
+            `实际容配比 <strong>${actualRatio.toFixed(3)}</strong>，表箱规格 <strong>${spec}</strong>`;
+        } else {
+          summaryHtml = `${locationText} 容配比上限 <strong>${ratioLimit.toFixed(2)}</strong>，` +
+            `直流侧总功率 <strong>${dcTotalPower.toFixed(2)} kW</strong>（组件 ${panelW}W × ${panelCnt} 块），` +
+            `交流侧计算功率 <strong>${acRequired.toFixed(1)} kW</strong>。` +
+            `推荐 <strong>${comboText}</strong>（总交流容量 <strong>${totalAcCapacity.toFixed(1)} kW</strong>，偏差 <strong>${diffPercent.toFixed(2)}%</strong>），` +
+            `实际容配比 <strong>${actualRatio.toFixed(3)}</strong>，表箱规格 <strong>${spec}</strong>`;
+        }
+        if (mainCable) summaryHtml += `，主电缆 <strong>${mainCable.copper}</strong>（铜）/ <strong>${mainCable.aluminum}</strong>（铝合金），距离要求 <strong>${mainCable.distance}</strong>`;
+        if (ratioPass) summaryHtml += ` <span style="color:#0f6b3e;">✓ 符合 ≤ ${ratioLimit.toFixed(2)} 要求</span>。`;
+        else summaryHtml += ` <span style="color:#b34a1c;">✗ 超出 ${ratioLimit.toFixed(2)} 上限</span>。`;
+        if (dcTotalPower > DC_POWER_LIMIT) summaryHtml += ` ⚠️ 直流侧功率超过 ${DC_POWER_LIMIT} kW 限制。`;
+        if (usedFallback) summaryHtml += ` <span style="color:#b34a1c;">（组件功率未输入有效值，按默认 ${defaults.panelPower}W 计算）</span>`;
+      }
+      summaryText.innerHTML = summaryHtml;
+
+      if (dcTotalPower > DC_POWER_LIMIT || (!ratioPass && RATIO_TABLE.length > 0)) {
+        summaryNote.classList.add('warn'); summaryNote.classList.remove('ok', 'investor');
+        summaryIcon.className = 'fas fa-exclamation-triangle';
+      } else if (isInvestorMode) {
+        summaryNote.classList.remove('warn', 'ok');
+        summaryNote.classList.add('investor');
+        summaryIcon.className = 'fas fa-handshake';
+      } else if (ratioPass && currentProvince && currentCity && currentDistrict) {
+        summaryNote.classList.add('ok'); summaryNote.classList.remove('warn', 'investor');
+        summaryIcon.className = 'fas fa-check-circle';
+      } else {
+        summaryNote.classList.remove('warn', 'ok', 'investor');
+        summaryIcon.className = 'fas fa-info-circle';
+      }
+
+      if (currentProvince && currentCity && currentDistrict && currentInvestor) {
+        const tagText = userUseInvestor ? `<strong>${currentInvestor.name}</strong>（已启用）` : `<strong>${currentInvestor.name}</strong>（未启用）`;
+        const tagClass = userUseInvestor ? 'investor' : '';
+        const items = locationInfo.querySelectorAll('.location-info-item');
+        let investorItem = null;
+        items.forEach(item => { if (item.querySelector('.fa-handshake')) investorItem = item; });
+        if (investorItem) {
+          investorItem.className = 'location-info-item ' + tagClass;
+          investorItem.innerHTML = `<i class="fas fa-handshake"></i><span>可绑资方：${tagText}</span>`;
+        }
+      }
+    }
+
+    // Excel 处理
+    function findSheetByName(workbook, candidates) {
+      for (const cand of candidates) {
+        const nc = cand.replace(/\s/g, '').toLowerCase();
+        for (const name of workbook.SheetNames) {
+          if (name.replace(/\s/g, '').toLowerCase() === nc) return workbook.Sheets[name];
+        }
+      }
+      for (const cand of candidates) {
+        const nc = cand.replace(/\s/g, '').toLowerCase();
+        for (const name of workbook.SheetNames) {
+          if (name.replace(/\s/g, '').toLowerCase().includes(nc)) return workbook.Sheets[name];
+        }
+      }
+      return null;
+    }
+
+    function parseMeterBoxSheet(sheet) {
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const rules = [];
+      rows.forEach((row, idx) => {
+        if (!row || row.length < 2) return;
+        const maxPowerRaw = row[0]; const spec = String(row[1] ?? '').trim();
+        if (idx === 0 && (isNaN(Number(maxPowerRaw)) || !spec)) return;
+        const maxPower = Number(maxPowerRaw);
+        if (isNaN(maxPower) || !spec) return;
+        rules.push({ maxPower, spec });
+      });
+      rules.sort((a, b) => a.maxPower - b.maxPower);
+      return rules.length > 0 ? rules : null;
+    }
+
+    function parseCableSheet(sheet) {
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const rules = [];
+      rows.forEach((row, idx) => {
+        if (!row || row.length < 4) return;
+        const maxPowerRaw = row[0]; const copper = String(row[1] ?? '').trim();
+        const aluminum = String(row[2] ?? '').trim(); const distance = String(row[3] ?? '').trim();
+        if (idx === 0 && (isNaN(Number(maxPowerRaw)) || !copper)) return;
+        const maxPower = Number(maxPowerRaw);
+        if (isNaN(maxPower) || !copper || !aluminum || !distance) return;
+        rules.push({ maxPower, copper, aluminum, distance });
+      });
+      rules.sort((a, b) => a.maxPower - b.maxPower);
+      return rules.length > 0 ? rules : null;
+    }
+
+    function parseRatioWorkbook(arrayBuffer) {
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const result = { table: [], provinceDefaults: null, meterBox55: null, meterBoxDefault: null, cable55: null, cableDefault: null };
+      const sheet1 = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet1) return result;
+      const rows1 = XLSX.utils.sheet_to_json(sheet1, { header: 1, defval: '' });
+      rows1.forEach((row, idx) => {
+        if (!row || row.length < 3) return;
+        const prov = String(row[0] ?? '').trim(); const city = String(row[1] ?? '').trim();
+        const dist = String(row[2] ?? '').trim();
+        if (!prov || !city || !dist) return;
+        if (idx === 0 && (prov === '省份' || prov === '省')) return;
+        const ratioRaw = row[3];
+        const isEmpty = (ratioRaw === '' || ratioRaw === null || ratioRaw === undefined);
+        if (isEmpty) { result.table.push([prov, city, dist, null]); return; }
+        const ratio = Number(ratioRaw);
+        if (isNaN(ratio)) return;
+        result.table.push([prov, city, dist, ratio]);
+      });
+      const sheet2 = findSheetByName(workbook, ['省份默认', '省份默认容配比', '默认容配比']);
+      if (sheet2) {
+        const rows2 = XLSX.utils.sheet_to_json(sheet2, { header: 1, defval: '' });
+        const provinceDefaults = {};
+        rows2.forEach((row, idx) => {
+          if (!row || row.length < 2) return;
+          const prov = String(row[0] ?? '').trim();
+          if (!prov) return;
+          if (idx === 0 && (prov === '省份' || prov === '省')) return;
+          const ratio = Number(row[1]);
+          if (isNaN(ratio)) return;
+          provinceDefaults[prov] = ratio;
+        });
+        if (Object.keys(provinceDefaults).length > 0) result.provinceDefaults = provinceDefaults;
+      }
+      const sm55 = findSheetByName(workbook, ['表箱规则55', '表箱55', '表箱规则-55', '表箱规则(55)']);
+      if (sm55) { const p = parseMeterBoxSheet(sm55); if (p) result.meterBox55 = p; }
+      const smDef = findSheetByName(workbook, ['表箱规则其他', '表箱其他', '表箱规则-其他', '表箱规则(其他)']);
+      if (smDef) { const p = parseMeterBoxSheet(smDef); if (p) result.meterBoxDefault = p; }
+      const sc55 = findSheetByName(workbook, ['电缆规则55', '电缆55', '电缆规则-55', '电缆规则(55)']);
+      if (sc55) { const p = parseCableSheet(sc55); if (p) result.cable55 = p; }
+      const scDef = findSheetByName(workbook, ['电缆规则其他', '电缆其他', '电缆规则-其他', '电缆规则(其他)']);
+      if (scDef) { const p = parseCableSheet(scDef); if (p) result.cableDefault = p; }
+      return result;
+    }
+
+    function applyParsedData(parsed, options = {}) {
+      const { save = true } = options;
+      RATIO_TABLE.length = 0;
+      parsed.table.forEach(row => RATIO_TABLE.push(row));
+      if (parsed.provinceDefaults) Object.assign(PROVINCE_DEFAULT_RATIO, parsed.provinceDefaults);
+      if (parsed.meterBox55) meterBoxRules55 = parsed.meterBox55;
+      if (parsed.meterBoxDefault) meterBoxRulesDefault = parsed.meterBoxDefault;
+      if (parsed.cable55) cableRules55 = parsed.cable55;
+      if (parsed.cableDefault) cableRulesDefault = parsed.cableDefault;
+      LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE, parsed.provinceDefaults || {});
+      refreshDropdowns(false);
+      updateTableStats();
+      refreshBase55ProvinceSelect();
+      refreshClass3ProvinceSelect();
+      refreshClass4ProvinceSelect();
+      updateRuleCounts();
+      if (save) saveToLocalStorage();
+      return true;
+    }
+
+    function updateTableStats() {
+      const provSet = new Set(RATIO_TABLE.map(r => r[0]));
+      const citySet = new Set(RATIO_TABLE.map(r => r[0] + '|' + r[1]));
+      const defaultCount = RATIO_TABLE.filter(r => r[3] === null).length;
+      let html = `<i class="fas fa-table" style="color:#2c7fb8;"></i> 当前数据：<strong>${provSet.size}</strong> 省 / <strong>${citySet.size}</strong> 市 / <strong>${RATIO_TABLE.length}</strong> 区县`;
+      if (defaultCount > 0) html += `（其中 <strong>${defaultCount}</strong> 条使用省份默认值）`;
+      if (RATIO_TABLE.length === 0) html += ` <span style="color:#b34a1c;">— 尚未导入任何数据</span>`;
+      tableStatsHint.innerHTML = html;
+    }
+
+    function exportRatioTable() {
+      if (RATIO_TABLE.length === 0) { alert('当前无数据可导出。'); return; }
+      const sheet1Data = [['省份', '市', '区县', '容配比'], ...RATIO_TABLE.map(r => [r[0], r[1], r[2], r[3] === null ? '' : r[3]])];
+      const ws1 = XLSX.utils.aoa_to_sheet(sheet1Data); ws1['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 14 }, { wch: 10 }];
+      const provDefaultMap = { ...PROVINCE_DEFAULT_RATIO };
+      RATIO_TABLE.forEach(([prov]) => { if (provDefaultMap[prov] === undefined) provDefaultMap[prov] = ''; });
+      const sheet2Data = [['省份', '默认容配比'], ...Object.keys(provDefaultMap).sort().map(prov => [prov, provDefaultMap[prov] === '' ? '' : provDefaultMap[prov]])];
+      const ws2 = XLSX.utils.aoa_to_sheet(sheet2Data); ws2['!cols'] = [{ wch: 22 }, { wch: 12 }];
+      const sheet3Data = [['最大功率(kW)', '表箱规格'], ...meterBoxRules55.map(r => [r.maxPower, r.spec])];
+      const ws3 = XLSX.utils.aoa_to_sheet(sheet3Data); ws3['!cols'] = [{ wch: 14 }, { wch: 32 }];
+      const sheet4Data = [['最大功率(kW)', '表箱规格'], ...meterBoxRulesDefault.map(r => [r.maxPower, r.spec])];
+      const ws4 = XLSX.utils.aoa_to_sheet(sheet4Data); ws4['!cols'] = [{ wch: 14 }, { wch: 32 }];
+      const sheet5Data = [['最大功率(kW)', '交流铜电缆', '铝合金电缆', '距离要求'], ...cableRules55.map(r => [r.maxPower, r.copper, r.aluminum, r.distance])];
+      const ws5 = XLSX.utils.aoa_to_sheet(sheet5Data); ws5['!cols'] = [{ wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 12 }];
+      const sheet6Data = [['最大功率(kW)', '交流铜电缆', '铝合金电缆', '距离要求'], ...cableRulesDefault.map(r => [r.maxPower, r.copper, r.aluminum, r.distance])];
+      const ws6 = XLSX.utils.aoa_to_sheet(sheet6Data); ws6['!cols'] = [{ wch: 14 }, { wch: 22 }, { wch: 22 }, { wch: 12 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws1, '区县表');
+      XLSX.utils.book_append_sheet(wb, ws2, '省份默认');
+      XLSX.utils.book_append_sheet(wb, ws3, '表箱规则55');
+      XLSX.utils.book_append_sheet(wb, ws4, '表箱规则其他');
+      XLSX.utils.book_append_sheet(wb, ws5, '电缆规则55');
+      XLSX.utils.book_append_sheet(wb, ws6, '电缆规则其他');
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+      XLSX.writeFile(wb, `逆变器配置表_${stamp}.xlsx`);
+    }
+
+    // 事件
+    document.getElementById('adminEntryBtn').addEventListener('click', () => {
+      if (isAdmin) { if (confirm('确定退出管理员模式？')) { isAdmin = false; writeAdminSession(false); applyAdminUI(); } }
+      else showLoginModal();
+    });
+    document.getElementById('appHeader').addEventListener('dblclick', (e) => {
+      if (e.target.closest('#adminEntryBtn')) return;
+      if (!isAdmin) showLoginModal();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault(); if (!isAdmin) showLoginModal();
+      }
+    });
+    document.getElementById('adminLogoutBtn').addEventListener('click', () => {
+      if (confirm('确定退出管理员模式？')) { isAdmin = false; writeAdminSession(false); applyAdminUI(); }
+    });
+    document.getElementById('loginCancelBtn').addEventListener('click', hideLoginModal);
+    document.getElementById('loginConfirmBtn').addEventListener('click', tryAdminLogin);
+    document.getElementById('adminPasswordInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); tryAdminLogin(); }
+      else if (e.key === 'Escape') hideLoginModal();
+    });
+    document.getElementById('loginModal').addEventListener('click', e => {
+      if (e.target.id === 'loginModal') hideLoginModal();
+    });
+
+    provinceSelect.addEventListener('change', () => onProvinceChange());
+    citySelect.addEventListener('change', () => onCityChange());
+    districtSelect.addEventListener('change', onDistrictChange);
+
+    investorToggleSwitch.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        userUseInvestor = btn.dataset.investor === 'yes';
+        updateInvestorToggleUI();
+        updateSelection();
+      });
+    });
+
+    panelPowerInput.addEventListener('change', () => {
+      syncPanelPowerUI();
+      if (panelPowerInput.value === 'custom') {
+        if (!panelPowerCustomInput.value) panelPowerCustomInput.value = String(defaults.panelPower);
+        setTimeout(() => panelPowerCustomInput.focus(), 40);
+      }
+      updateSelection();
+    });
+    panelCountInput.addEventListener('input', updateSelection);
+    panelCountInput.addEventListener('change', updateSelection);
+    panelPowerCustomInput.addEventListener('input', updateSelection);
+    panelPowerCustomInput.addEventListener('change', updateSelection);
+
+    panelPowerAddBtn.addEventListener('click', () => {
+      const v = parseFloat(panelPowerNew.value);
+      if (isNaN(v)) { alert('请输入有效的功率数值'); return; }
+      if (addTier('panel', v)) panelPowerNew.value = '';
+    });
+    panelPowerNew.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); panelPowerAddBtn.click(); }
+    });
+    invPower55AddBtn.addEventListener('click', () => {
+      const v = parseFloat(invPower55New.value);
+      if (isNaN(v)) { alert('请输入有效的功率数值'); return; }
+      if (addTier('inv55', v)) invPower55New.value = '';
+    });
+    invPower55New.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); invPower55AddBtn.click(); }
+    });
+    invPower50AddBtn.addEventListener('click', () => {
+      const v = parseFloat(invPower50New.value);
+      if (isNaN(v)) { alert('请输入有效的功率数值'); return; }
+      if (addTier('inv50', v)) invPower50New.value = '';
+    });
+    invPower50New.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); invPower50AddBtn.click(); }
+    });
+    invPowerClass3AddBtn.addEventListener('click', () => {
+      const v = parseFloat(invPowerClass3New.value);
+      if (isNaN(v)) { alert('请输入有效的功率数值'); return; }
+      if (addTier('invClass3', v)) invPowerClass3New.value = '';
+    });
+    invPowerClass3New.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); invPowerClass3AddBtn.click(); }
+    });
+    invPowerClass4AddBtn.addEventListener('click', () => {
+      const v = parseFloat(invPowerClass4New.value);
+      if (isNaN(v)) { alert('请输入有效的功率数值'); return; }
+      if (addTier('invClass4', v)) invPowerClass4New.value = '';
+    });
+    invPowerClass4New.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); invPowerClass4AddBtn.click(); }
+    });
+
+    document.querySelectorAll('.tier-reset-btn').forEach(btn => {
+      if (btn.dataset.target) btn.addEventListener('click', () => resetTier(btn.dataset.target));
+    });
+
+    base55AddBtn.addEventListener('click', () => {
+      const prov = base55ProvinceSelect.value;
+      if (addBase55Province(prov)) base55ProvinceSelect.value = '';
+    });
+    base55ProvinceSelect.addEventListener('change', () => {
+      const prov = base55ProvinceSelect.value;
+      if (prov && addBase55Province(prov)) base55ProvinceSelect.value = '';
+    });
+    base55ResetBtn.addEventListener('click', resetBase55Provinces);
+
+    class3AddBtn.addEventListener('click', () => {
+      const prov = class3ProvinceSelect.value;
+      if (addClass3Province(prov)) class3ProvinceSelect.value = '';
+    });
+    class3ProvinceSelect.addEventListener('change', () => {
+      const prov = class3ProvinceSelect.value;
+      if (prov && addClass3Province(prov)) class3ProvinceSelect.value = '';
+    });
+    class3ResetBtn.addEventListener('click', resetClass3Provinces);
+
+    class4AddBtn.addEventListener('click', () => {
+      const prov = class4ProvinceSelect.value;
+      if (addClass4Province(prov)) class4ProvinceSelect.value = '';
+    });
+    class4ProvinceSelect.addEventListener('change', () => {
+      const prov = class4ProvinceSelect.value;
+      if (prov && addClass4Province(prov)) class4ProvinceSelect.value = '';
+    });
+    class4ResetBtn.addEventListener('click', resetClass4Provinces);
+
+    addInvestorBtn.addEventListener('click', addInvestor);
+    investorsResetBtn.addEventListener('click', resetInvestors);
+    bindProvinceAddBtn.addEventListener('click', () => {
+      const prov = bindProvinceSelect.value; const invId = bindInvestorSelect.value;
+      if (addProvinceInvestor(prov, invId)) { bindProvinceSelect.value = ''; bindInvestorSelect.value = ''; }
+    });
+
+    meterBoxResetAllBtn.addEventListener('click', resetMeterBoxRules);
+    cableResetAllBtn.addEventListener('click', resetCableRules);
+
+    excelFileInput.addEventListener('change', e => {
+      if (!isAdmin) { alert('需要管理员权限。'); e.target.value = ''; return; }
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const parsed = parseRatioWorkbook(ev.target.result);
+          if (!parsed.table.length) { alert('未解析到有效数据。'); return; }
+          applyParsedData(parsed);
+          let msg = `已导入 ${parsed.table.length} 条区县记录`;
+          if (parsed.provinceDefaults) msg += `\n覆盖 ${Object.keys(parsed.provinceDefaults).length} 个省份默认容配比`;
+          if (parsed.meterBox55) msg += `\n表箱规则55：${parsed.meterBox55.length} 条`;
+          if (parsed.meterBoxDefault) msg += `\n表箱规则其他：${parsed.meterBoxDefault.length} 条`;
+          if (parsed.cable55) msg += `\n电缆规则55：${parsed.cable55.length} 条`;
+          if (parsed.cableDefault) msg += `\n电缆规则其他：${parsed.cableDefault.length} 条`;
+          alert(msg);
+        } catch (err) { console.error(err); alert('读取 Excel 失败：' + err.message); }
+      };
+      reader.onerror = () => alert('文件读取失败。');
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+    });
+
+    exportExcelBtn.addEventListener('click', () => {
+      if (!isAdmin) { alert('需要管理员权限。'); return; }
+      exportRatioTable();
+    });
+
+    loadSampleBtn.addEventListener('click', () => {
+      if (!isAdmin) { alert('需要管理员权限。'); return; }
+      if (RATIO_TABLE.length > 0) { if (!confirm('覆盖当前区县数据？')) return; }
+      const sample = SAMPLE_RATIO_TABLE.map(r => [...r]);
+      applyParsedData({ table: sample, provinceDefaults: null, meterBox55: null, meterBoxDefault: null, cable55: null, cableDefault: null });
+      alert(`已加载 ${sample.length} 条区县记录。`);
+    });
+
+    clearDataBtn.addEventListener('click', () => {
+      if (!isAdmin) { alert('需要管理员权限。'); return; }
+      if (RATIO_TABLE.length === 0) { alert('当前已是空数据。'); return; }
+      if (!confirm('确定清空所有省市县数据？')) return;
+      applyParsedData({
+        table: [], provinceDefaults: null,
+        meterBox55: JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_55)),
+        meterBoxDefault: JSON.parse(JSON.stringify(DEFAULT_METER_BOX_RULES_DEFAULT)),
+        cable55: JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_55)),
+        cableDefault: JSON.parse(JSON.stringify(DEFAULT_CABLE_RULES_DEFAULT))
+      }, { save: false });
+      clearLocalStorage();
+      updateTableStats();
+      updateRuleCounts();
+      alert('已清空。');
+    });
+
+    resetBtn.addEventListener('click', () => {
+      panelPowerInput.value = String(defaults.panelPower);
+      panelPowerCustomInput.value = '';
+      syncPanelPowerUI();
+      panelCountInput.value = defaults.panelCount;
+      dcAcRatioInput.value = defaults.dcAcRatio;
+      panelCountWrapper.classList.remove('warning');
+      panelCountHint.textContent = `直流侧功率 = 组件功率 × 块数，需 ≤ ${DC_POWER_LIMIT} kW`;
+      updateSelection();
+    });
+
+    function init() {
+      isAdmin = readAdminSession();
+      applyAdminUI();
+      const saved = loadFromLocalStorage();
+      if (saved) {
+        if (saved.table && Array.isArray(saved.table)) { RATIO_TABLE.length = 0; saved.table.forEach(r => RATIO_TABLE.push(r)); }
+        if (saved.provinceDefaults) Object.assign(PROVINCE_DEFAULT_RATIO, saved.provinceDefaults);
+        if (Array.isArray(saved.panelPowerOptions) && saved.panelPowerOptions.length > 0)
+          panelPowerOptions = [...saved.panelPowerOptions].sort((a, b) => a - b);
+        if (Array.isArray(saved.inverterPowers55) && saved.inverterPowers55.length > 0)
+          inverterPowers55 = [...saved.inverterPowers55].sort((a, b) => a - b);
+        if (Array.isArray(saved.inverterPowers50) && saved.inverterPowers50.length > 0)
+          inverterPowers50 = [...saved.inverterPowers50].sort((a, b) => a - b);
+        if (Array.isArray(saved.inverterPowersClass3) && saved.inverterPowersClass3.length > 0)
+          inverterPowersClass3 = [...saved.inverterPowersClass3].sort((a, b) => a - b);
+        if (Array.isArray(saved.inverterPowersClass4) && saved.inverterPowersClass4.length > 0)
+          inverterPowersClass4 = [...saved.inverterPowersClass4].sort((a, b) => a - b);
+        if (Array.isArray(saved.base55Provinces) && saved.base55Provinces.length > 0)
+          base55Provinces = new Set(saved.base55Provinces);
+        if (Array.isArray(saved.class3Provinces)) class3Provinces = new Set(saved.class3Provinces);
+        if (Array.isArray(saved.class4Provinces)) class4Provinces = new Set(saved.class4Provinces);
+        if (Array.isArray(saved.investors) && saved.investors.length > 0)
+          investors = JSON.parse(JSON.stringify(saved.investors));
+        if (saved.provinceInvestorMap && typeof saved.provinceInvestorMap === 'object')
+          provinceInvestorMap = { ...saved.provinceInvestorMap };
+        if (Array.isArray(saved.meterBoxRules55) && saved.meterBoxRules55.length > 0)
+          meterBoxRules55 = JSON.parse(JSON.stringify(saved.meterBoxRules55));
+        if (Array.isArray(saved.meterBoxRulesDefault) && saved.meterBoxRulesDefault.length > 0)
+          meterBoxRulesDefault = JSON.parse(JSON.stringify(saved.meterBoxRulesDefault));
+        if (Array.isArray(saved.cableRules55) && saved.cableRules55.length > 0)
+          cableRules55 = JSON.parse(JSON.stringify(saved.cableRules55));
+        if (Array.isArray(saved.cableRulesDefault) && saved.cableRulesDefault.length > 0)
+          cableRulesDefault = JSON.parse(JSON.stringify(saved.cableRulesDefault));
+      }
+      renderPanelPowerSelect();
+      renderTierTags();
+      LOCATION_CONFIG = buildProvinceConfig(RATIO_TABLE);
+      refreshDropdowns(false);
+      updateTableStats();
+    }
+
+    init();
+  </script>
+</body>
+</html>
